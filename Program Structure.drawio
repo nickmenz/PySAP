@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-08-12T18:41:23.386Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.203" etag="JUDivW7SSLDuV1eYG6te" version="21.6.6" type="github">
+<mxfile host="app.diagrams.net" modified="2023-08-12T18:43:04.383Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36 Edg/115.0.1901.203" etag="KVZzbqvCNmloBJWSBzay" version="21.6.6" type="github">
   <diagram name="Page-1" id="8v4hivThOCxOhdB2SJ5s">
-    <mxGraphModel dx="1423" dy="1930" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="996" dy="1681" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -132,6 +132,9 @@
         </mxCell>
         <mxCell id="5DhYSEr1fFvONISvYPqg-40" value="Key Inputs:&lt;br&gt;&lt;ul&gt;&lt;li&gt;Nodes and locations&lt;/li&gt;&lt;li&gt;Members&lt;/li&gt;&lt;li&gt;How members connect to nodes&lt;/li&gt;&lt;li&gt;External loads&lt;/li&gt;&lt;li&gt;External displacement constraints&lt;/li&gt;&lt;/ul&gt;&lt;div&gt;Key Outputs&lt;/div&gt;&lt;div&gt;&lt;ul&gt;&lt;li&gt;Element stress/strain&lt;/li&gt;&lt;li&gt;Nodal displacements&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
           <mxGeometry x="1280" y="-810" width="340" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="5DhYSEr1fFvONISvYPqg-41" value="To-do&lt;br&gt;&lt;ul&gt;&lt;li&gt;First, focus on making a program that has no GUI&lt;/li&gt;&lt;li&gt;Learn more about how to solve for unknowns once the stiffness matrix is assembled&lt;/li&gt;&lt;li&gt;Implement enough so that an uncondensed structure stiffness matrix can be printed from a given assemblage of elements and nodes&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="380" y="-830" width="340" height="160" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
