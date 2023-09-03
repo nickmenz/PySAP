@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-09-03T19:48:41.898Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.69" etag="NIArI8tYxVoY-gJDx2n9" version="21.6.8" type="github">
+<mxfile host="app.diagrams.net" modified="2023-09-03T19:52:23.144Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.69" etag="ZkqAtSxSZs7Yf5RBOCE_" version="21.6.8" type="github">
   <diagram name="Page-1" id="8v4hivThOCxOhdB2SJ5s">
-    <mxGraphModel dx="186" dy="1541" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="272" dy="1748" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -28,7 +28,7 @@
         <mxCell id="5DhYSEr1fFvONISvYPqg-9" value="- name: string&lt;br&gt;- number_of_elements: int&lt;br&gt;- number_of_nodes: int&lt;br&gt;- node_list: list[]&lt;br&gt;- element_list: list[]" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="5DhYSEr1fFvONISvYPqg-8" vertex="1">
           <mxGeometry y="30" width="280" height="90" as="geometry" />
         </mxCell>
-        <mxCell id="5DhYSEr1fFvONISvYPqg-10" value="+ add_node(Node node)&lt;br&gt;+ add_element(StructuralElement element)" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="5DhYSEr1fFvONISvYPqg-8" vertex="1">
+        <mxCell id="5DhYSEr1fFvONISvYPqg-10" value="+ print_name()&lt;br&gt;+ add_node(Node node)&lt;br&gt;+ add_element(StructuralElement element)&lt;br&gt;+ add_load(Load load)&lt;br&gt;+ list_elements()&lt;br&gt;+ list_nodes()&lt;br&gt;" style="text;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;spacingLeft=4;spacingRight=4;overflow=hidden;points=[[0,0.5],[1,0.5]];portConstraint=eastwest;rotatable=0;whiteSpace=wrap;html=1;" parent="5DhYSEr1fFvONISvYPqg-8" vertex="1">
           <mxGeometry y="120" width="280" height="120" as="geometry" />
         </mxCell>
         <mxCell id="5DhYSEr1fFvONISvYPqg-11" value="Truss Class" style="swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=30;horizontalStack=0;resizeParent=1;resizeParentMax=0;resizeLast=0;collapsible=1;marginBottom=0;whiteSpace=wrap;html=1;" parent="1" vertex="1">
