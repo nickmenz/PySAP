@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-09-09T21:05:52.354Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.69" etag="wlaUTX5FknyaO8EBnlw7" version="21.7.2" type="github">
+<mxfile host="app.diagrams.net" modified="2023-09-09T21:09:35.238Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/116.0.0.0 Safari/537.36 Edg/116.0.1938.69" etag="DtBIGcXSzIIBKrgupd26" version="21.7.2" type="github">
   <diagram name="Page-1" id="8v4hivThOCxOhdB2SJ5s">
-    <mxGraphModel dx="194" dy="1574" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="274" dy="1769" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -130,11 +130,11 @@
         <mxCell id="5DhYSEr1fFvONISvYPqg-40" value="Key Inputs:&lt;br&gt;&lt;ul&gt;&lt;li&gt;Nodes and locations&lt;/li&gt;&lt;li&gt;Members&lt;/li&gt;&lt;li&gt;How members connect to nodes&lt;/li&gt;&lt;li&gt;External loads&lt;/li&gt;&lt;li&gt;External displacement constraints&lt;/li&gt;&lt;/ul&gt;&lt;div&gt;Key Outputs&lt;/div&gt;&lt;div&gt;&lt;ul&gt;&lt;li&gt;Element stress/strain&lt;/li&gt;&lt;li&gt;Nodal displacements&lt;/li&gt;&lt;/ul&gt;&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="1280" y="-810" width="340" height="160" as="geometry" />
         </mxCell>
-        <mxCell id="5DhYSEr1fFvONISvYPqg-41" value="To-do&lt;br&gt;&lt;ul&gt;&lt;li&gt;First program milestone: non-GUI based program that allows user to solve truss and frame structures. More FEA knowledge of user will be required (node numbering, element connectivity, etc.)&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
+        <mxCell id="5DhYSEr1fFvONISvYPqg-41" value="To-do&lt;br&gt;&lt;ul&gt;&lt;li&gt;First program milestone: non-GUI based program that allows user to solve truss and frame structures. More FEA knowledge of user will be required (node numbering, element connectivity, etc.)&lt;/li&gt;&lt;li&gt;Make my own theory reference, with only useful stuff from Cook and Bathe&lt;/li&gt;&lt;/ul&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
           <mxGeometry x="350" y="-1070" width="340" height="160" as="geometry" />
         </mxCell>
         <mxCell id="RbHJwu_WiSMOWjQ95nWx-1" value="User Experience:&lt;br&gt;&lt;ol&gt;&lt;li&gt;Define global node locations.&lt;/li&gt;&lt;li&gt;Define elements (section properties, connectivity to global nodes)&lt;/li&gt;&lt;li&gt;Define BCs&amp;nbsp;&lt;/li&gt;&lt;li&gt;Define loads on nodes or elements&lt;/li&gt;&lt;li&gt;Solve&lt;/li&gt;&lt;/ol&gt;&lt;div&gt;Once user requests solution:&lt;/div&gt;&lt;div&gt;Assemble global K&lt;/div&gt;&lt;div&gt;Assemble global U&lt;/div&gt;&lt;div&gt;Assemble global F&lt;/div&gt;&lt;div&gt;Solve Matrix&lt;/div&gt;&lt;div&gt;Obtain F and U&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;For each node, returns reaction forces, displacements&lt;/div&gt;" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;" parent="1" vertex="1">
-          <mxGeometry x="362" y="-900" width="400" height="230" as="geometry" />
+          <mxGeometry x="440" y="-845" width="400" height="230" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
