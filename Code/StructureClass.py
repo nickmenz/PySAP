@@ -18,6 +18,7 @@ class Structure:
         self.number_of_distributed_loads = 0
         self.distributed_load_list = []
         self.NUM_DOF_PER_NODE = 3
+        self.global_D = np.zeros((0,))
 
     
     def print_name(self):
@@ -111,10 +112,10 @@ class Structure:
         print(global_F)
         
         # Solve for displacements
-        global_D = np.linalg.solve(global_K, global_F)
+        self.global_D = np.linalg.solve(global_K, global_F)
         print("Global displacements = ")
-        print(global_D)
-        return 
+        print(self.global_D)
+        return self.global_D
 
     
     # 2D Array where 1 = constrained DOF, 0 = unconstrained DOF
@@ -168,6 +169,14 @@ class Structure:
                 connectivity[j * self.NUM_DOF_PER_NODE+ i] = identification_array_converted[i, node.get_node_number()]
         
         return connectivity
+
+    def plot_deformed_shape(self):
+        if self.global_D.size == 0:
+            try:
+                raise RuntimeError()
+            except:
+                print("Displacements of structure have not been solved for yet!")
+
 
 
 class Frame(Structure):
