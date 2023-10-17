@@ -44,9 +44,11 @@ class TrussElement(StructuralElement):
         # Cosine of angle relative to X-axis
         c = np.dot(element_vector, np.array([1, 0])) / element_length
         print(c)
-        # Sine of angle relative to X-axis
+        # Sine of angle relative to X-axis 
         s = np.cross(np.array([1, 0]), element_vector) / element_length
         print(s)
+        #                   NODE 1     |     NODE 2 
+        #                 UX     UY RZ |   UX     UY RZ
         k = np.array([[ c**2,   c*s, 0, -c**2,  -c*s, 0],
                       [  c*s,  s**2, 0,  -c*s, -s**2, 0],
                       [    0,     0, 0,     0,     0, 0],

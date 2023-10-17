@@ -8,37 +8,6 @@ global NUM_DOF_PER_NODE
 NUM_DOF_PER_NODE = 3
 
 def main():
-  
-    #A = 0.1
-    #E = 10000000
-    #L = 10
-    #K = np.array([[0.25, -0.433, -0.25, 0.433, 0, 0],
-    #              [-0.433, 0.75, 0.433, -0.75, 0, 0],
-    #              [-0.25, 0.433, 0.5, 0, -0.25, -0.433],
-    #              [0.433, -0.75, 0, 1.5, -0.433, -0.75],
-    #              [0, 0, -0.25, -0.433, 0.25, 0.433],
-    #              [0, 0, -0.433, -0.75, 0.433, 0.75]
-    #             ])
-    #K = K*A*E/L
-    #print(K)
-    #f = np.array([0, 0, 0, -1732, 0 ,0])
-    
-    #u = np.linalg.solve(K, f)
-    #print(u)
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
 
     elastic_mod = 10000000 # ksi
     truss_area = 0.1 # in^2
@@ -59,14 +28,15 @@ def main():
 
     load_1 = ld.PointLoad(np.array([0, -1732, 0]), node_2)
 
-    node_1.set_dof_boundary_conditions(np.array([1, 1, 1], dtype=np.int8))
+    node_1.set_dof_boundary_conditions(np.array([0, 1, 0], dtype=np.int8))
     node_2.set_dof_boundary_conditions(np.array([0, 0, 1], dtype=np.int8))
     node_3.set_dof_boundary_conditions(np.array([1, 1, 1], dtype=np.int8))
 
     a.add_point_load(load_1)
 
 
-    disp = a.solve()
+    #disp = a.solve()
+    a.plot_structure()
 
 
 

@@ -1,6 +1,10 @@
+from this import s
 import StructuralElementClass as el
 import NodeClass as nd
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import matplotlib.transforms as transform
 
 
 class Structure:
@@ -19,6 +23,8 @@ class Structure:
         self.distributed_load_list = []
         self.NUM_DOF_PER_NODE = 3
         self.global_D = np.zeros((0,))
+        self.boundary_conditions = []
+        self.fig, self.ax = plt.subplots()
 
     
     def print_name(self):
@@ -34,6 +40,9 @@ class Structure:
         for node, i  in enumerate(self.node_list):
             print("node " + str(i) + " = " + str(node.get_coords()))
         return
+
+    def get_nodes(self):
+        return self.node_list
 
     def add_element(self, element):
         self.element_list.append(element)
@@ -176,8 +185,111 @@ class Structure:
                 raise RuntimeError()
             except:
                 print("Displacements of structure have not been solved for yet!")
+    
+    def plot_structure(self):
 
+        self.ax.axis("equal")
 
+        for node in self.node_list:
+            coords = node.get_coordinates()
+            self.ax.scatter(coords[0], coords[1], color='black', zorder=1)
+
+        max_x_coord = max(self.ax.get_xlim())
+        min_x_coord = min(self.ax.get_xlim())
+        max_y_coord = max(self.ax.get_ylim())
+        min_y_coord = min(self.ax.get_ylim())
+        screen_size = np.sqrt((max_x_coord - min_x_coord)**2 + (max_y_coord - min_y_coord)**2)
+        default_scale_factor = screen_size / 30
+        patch_list = self.get_boundary_conditions_to_plot(default_scale_factor)
+        for x in patch_list: 
+            self.ax.add_patch(x)
+
+        for element in self.element_list:
+            el_nodes = element.get_global_nodes()
+            node1_coords = el_nodes[0].get_coordinates()
+            node2_coords = el_nodes[1].get_coordinates()
+            x = [node1_coords[0], node2_coords[0]]
+            y = [node1_coords[1], node2_coords[1]]
+            self.ax.plot(x, y, color='blue', linestyle='solid', linewidth=2.5, zorder=0)
+
+        plt.show()
+
+    def get_boundary_conditions_to_plot(self, scale_factor):
+        ## if boundary conditions list has not been filled yet
+        #if len(self.boundary_conditions == 0):
+        #    for node in self.node_list:
+        #        self.boundary_conditions.append(node.get_dof_boundary_conditions())
+        #patch_list = []
+        
+        patch_list = []
+        for node in self.node_list:
+            coords = node.get_coordinates()
+            bc = node.get_dof_boundary_conditions()
+
+            circle_radius = 0.5*scale_factor
+            triang_height = scale_factor
+            # Y-axis roller
+            if np.array_equal(bc, [1, 0, 0]):
+                roller_y = patches.Circle([coords[0] + 0.5*scale_factor, coords[1]], radius=0.5*scale_factor, color='red', zorder=2)
+                line = patches.Rectangle([coords[0] + scale_factor + 0.05*scale_factor, coords[1] - scale_factor],\
+                   0.05*scale_factor, 2*scale_factor, color='red', zorder=2)
+                patch_list.append(roller_y)
+                patch_list.append(line)
+            
+            # X-axis roller
+            elif np.array_equal(bc, [0, 1, 0]):
+                roller_x = patches.Circle([coords[0], coords[1] - 0.5*scale_factor], radius=0.5*scale_factor, color='red', zorder=2)
+                line = patches.Rectangle([coords[0] - scale_factor, coords[1] - scale_factor - 0.05*scale_factor],\
+                   2*scale_factor, 0.05*scale_factor, color='red', zorder=2)
+                patch_list.append(roller_x)
+                patch_list.append(line)
+
+            # rotational spring
+            elif np.array_equal(bc, [0, 0, 1]):
+                ## TODO - IMPLEMENT CURVED ARROWS
+                rot_spring = patches.Arc([coords[0], coords[1]], scale_factor, scale_factor, angle=0.0, theta1=135, theta2=45, zorder=2)
+                patch_list.append(rot_spring)
+            
+            # Pin
+            elif np.array_equal(bc, [1, 1, 0]):
+                pin = plt.Polygon(
+                    [[coords[0], coords[1]],
+                    [coords[0] - 0.5*scale_factor, coords[1] - scale_factor],
+                    [coords[0] + 0.5*scale_factor, coords[1] - scale_factor]],
+                    color='red')
+                patch_list.append(pin)
+            
+            # Y-axis roller + rotational spring
+            elif np.array_equal(bc, [1, 0, 1]):
+                roller_y = patches.Circle([coords[0] + 0.5*scale_factor, coords[1]], radius=0.5*scale_factor, color='red', zorder=2)
+                line = patches.Rectangle([coords[0] + scale_factor + 0.05*scale_factor, coords[1] - scale_factor],\
+                   0.05*scale_factor, 2*scale_factor, color='red', zorder=2)
+                patch_list.append(roller_y)
+                patch_list.append(line)
+
+                rot_spring = patches.Arc([coords[0], coords[1]], scale_factor, scale_factor, angle=0.0, theta1=135, theta2=45, zorder=2)
+                patch_list.append(rot_spring)
+            
+            # X-axis roller + rotational spring
+            elif np.array_equal(bc, [0, 1, 1]):
+                roller_x = patches.Circle([coords[0], coords[1] - 0.5*scale_factor], radius=0.5*scale_factor, color='red', zorder=2)
+                patch_list.append(roller_x)
+
+                rot_spring = patches.Arc([coords[0], coords[1]], scale_factor, scale_factor, angle=0.0, theta1=135, theta2=45, zorder=2)
+                patch_list.append(rot_spring)
+            
+            # fully fixed
+            # TODO - rotate so that BC is perp to members framing into node
+            elif np.array_equal(bc, [1, 1, 1]):
+                pin = plt.Polygon(
+                   [[coords[0] - scale_factor, coords[1] - 0.2*scale_factor],
+                    [coords[0] - scale_factor, coords[1] + 0.2*scale_factor],
+                    [coords[0] + scale_factor, coords[1] + 0.2*scale_factor],
+                    [coords[0] + scale_factor, coords[1] - 0.2*scale_factor]],
+                    color='red', fill=False, closed=True, hatch="///////")
+                patch_list.append(pin)
+
+        return patch_list
 
 class Frame(Structure):
     pass
