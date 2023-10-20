@@ -24,6 +24,7 @@ class Structure:
         self.NUM_DOF_PER_NODE = 3
         self.global_D = np.zeros((0,))
         self.boundary_conditions = []
+        self.suppress_rotz = True
         self.fig, self.ax = plt.subplots()
 
     
@@ -77,10 +78,14 @@ class Structure:
     def solve(self):
        # Number all elements and nodes
         for i, node in enumerate(self.node_list):
-            node.set_node_number(i)
-
+            node.set_node_number(i + 1)
+        
+        #truss_elem = el.TrussElement()
         for i, element in enumerate(self.element_list):
-            element.set_element_number(i)
+            element.set_element_number(i + 1)
+            if not isinstance(element, el.TrussElement):
+                self.suppress_rotz = False
+        print(self.suppress_rotz)
 
         # Define the ID array where 1 = constrained DOF, 0 = unconstrained DOF
         identification_array = self.create_identification_array()
@@ -113,9 +118,13 @@ class Structure:
         for point_load in self.point_load_list:
             node = point_load.get_node_applied_to()
             load_vector = point_load.get_load_vector()
-            for i in range(self.NUM_DOF_PER_NODE):
+            for i in range(2):
                 global_dof_num  = identification_array_converted[i, node.get_node_number() - 1]
-                global_F[global_dof_num - 1] += load_vector[i]
+                # Prevent trying to access constrained DOF
+                if global_dof_num != 0:
+                    global_F[global_dof_num - 1] += load_vector[i]
+                else:
+                    print("Warning - Applied Force has been specified on a constrained DOF. This will be ignored!")
         
         print("Assembled global F = ")
         print(global_F)
@@ -135,11 +144,16 @@ class Structure:
     #    [0, 1, 1, 1]
     #
     def create_identification_array(self):
+        # TODO: When structure only has truss members, suppress RZ DOF
         constrained_dof = np.zeros((3, self.number_of_nodes), dtype=np.int64)
+
         for j, node in enumerate(self.node_list):
             node_dof = node.get_dof_boundary_conditions()
             for i in range(self.NUM_DOF_PER_NODE):
                 constrained_dof[i, j] = node_dof[i]
+
+        if self.suppress_rotz:
+            constrained_dof[2,:] = 1
 
         return constrained_dof
 
@@ -175,7 +189,7 @@ class Structure:
         connectivity = np.zeros((self.NUM_DOF_PER_NODE * len(element.get_global_nodes())), dtype=np.int64)
         for j, node in enumerate(element.get_global_nodes()):
             for i in range(self.NUM_DOF_PER_NODE):
-                connectivity[j * self.NUM_DOF_PER_NODE+ i] = identification_array_converted[i, node.get_node_number()]
+                connectivity[j * self.NUM_DOF_PER_NODE + i] = identification_array_converted[i, node.get_node_number() - 1]
         
         return connectivity
 
@@ -185,41 +199,69 @@ class Structure:
                 raise RuntimeError()
             except:
                 print("Displacements of structure have not been solved for yet!")
+        self.plot_structure()
+        #### PLOT DEFORMED NODES AND ELEMENTS
+        #### FOR NODES, CONSIDER ADDING "DEFORMED COORDINATES" TO NODE OBJECT DEFINITION
+
     
     def plot_structure(self):
 
         self.ax.axis("equal")
 
         for node in self.node_list:
-            coords = node.get_coordinates()
-            self.ax.scatter(coords[0], coords[1], color='black', zorder=1)
-
+            self.plot_node(node)
+            
         max_x_coord = max(self.ax.get_xlim())
         min_x_coord = min(self.ax.get_xlim())
         max_y_coord = max(self.ax.get_ylim())
         min_y_coord = min(self.ax.get_ylim())
         screen_size = np.sqrt((max_x_coord - min_x_coord)**2 + (max_y_coord - min_y_coord)**2)
         default_scale_factor = screen_size / 30
-        patch_list = self.get_boundary_conditions_to_plot(default_scale_factor)
-        for x in patch_list: 
-            self.ax.add_patch(x)
+        
+        self.plot_boundary_conditions(default_scale_factor)
 
         for element in self.element_list:
-            el_nodes = element.get_global_nodes()
-            node1_coords = el_nodes[0].get_coordinates()
-            node2_coords = el_nodes[1].get_coordinates()
-            x = [node1_coords[0], node2_coords[0]]
-            y = [node1_coords[1], node2_coords[1]]
-            self.ax.plot(x, y, color='blue', linestyle='solid', linewidth=2.5, zorder=0)
+            self.plot_element(element)
+            
+        for point_load in self.point_load_list:
+            self.plot_point_load(point_load, default_scale_factor)
 
         plt.show()
 
-    def get_boundary_conditions_to_plot(self, scale_factor):
+    def plot_node(self, node):
+        coords = node.get_coordinates()
+        self.ax.scatter(coords[0], coords[1], color='black', zorder=1)
+    
+    def plot_element(self, element):
+        el_nodes = element.get_global_nodes()
+        node1_coords = el_nodes[0].get_coordinates()
+        node2_coords = el_nodes[1].get_coordinates()
+        x = [node1_coords[0], node2_coords[0]]
+        y = [node1_coords[1], node2_coords[1]]
+        self.ax.plot(x, y, color='blue', linestyle='solid', linewidth=2.5, zorder=0)
+
+        return
+
+
+    def plot_point_load(self, point_load, scale_factor):
+        node = point_load.get_node_applied_to()
+        node_coord = node.get_coordinates()
+        load_vector = point_load.get_load_vector()
+        load_magnitude = str(round(np.linalg.norm(load_vector), 2))
+        arrow_vector = 3 * scale_factor * load_vector / np.linalg.norm(load_magnitude)
+            
+        self.ax.annotate(load_magnitude, [node_coord[0], node_coord[1]],\
+            xytext=[node_coord[0] - arrow_vector[0], node_coord[1] - arrow_vector[1]], \
+            xycoords='data', textcoords='data', horizontalalignment='center', arrowprops=dict(edgecolor='green', \
+            arrowstyle='->', lw= scale_factor * 5), zorder=4)
+        
+        return
+
+    def plot_boundary_conditions(self, scale_factor):
         ## if boundary conditions list has not been filled yet
         #if len(self.boundary_conditions == 0):
         #    for node in self.node_list:
         #        self.boundary_conditions.append(node.get_dof_boundary_conditions())
-        #patch_list = []
         
         patch_list = []
         for node in self.node_list:
@@ -288,8 +330,11 @@ class Structure:
                     [coords[0] + scale_factor, coords[1] - 0.2*scale_factor]],
                     color='red', fill=False, closed=True, hatch="///////")
                 patch_list.append(pin)
+        
+        for x in patch_list: 
+            self.ax.add_patch(x)
 
-        return patch_list
+        return 
 
 class Frame(Structure):
     pass

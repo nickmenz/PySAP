@@ -1,4 +1,5 @@
 #from scipy.spatial.distance import cdist
+from pickle import NONE
 import numpy as np
 
 
@@ -29,11 +30,29 @@ class StructuralElement:
 
 class TrussElement(StructuralElement):
     
-    def __init__(self, global_nodes, area, elastic_modulus):
-        self.global_nodes = global_nodes
-        self.area = area
-        self.elastic_modulus = elastic_modulus
+    def __init__(self):
+        self.global_nodes = None
+        self.area = None
+        self.elastic_modulus = None
         self.element_number = 0
+    
+    def __init__(self, global_nodes=None, area=None, elastic_modulus=None):
+        if global_nodes is None:
+            self.global_nodes=None
+        else:
+            self.global_nodes = global_nodes
+
+        if area is None:
+            self.area=None
+        else:
+            self.area = area
+
+        if elastic_modulus is None:
+            self.elastic_modulus=None
+        else:
+            self.elastic_modulus = elastic_modulus
+
+        self.element_number = -1
 
     # The element stiffness matrix assumes a 2D structural system with 
     # the DOF UX, UY, and RZ

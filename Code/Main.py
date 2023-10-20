@@ -26,17 +26,17 @@ def main():
     a.add_element(element_1)
     a.add_element(element_2)
 
-    load_1 = ld.PointLoad(np.array([0, -1732, 0]), node_2)
+    load_1 = ld.PointLoad(np.array([0, -1732]), node_2)
 
-    node_1.set_dof_boundary_conditions(np.array([0, 1, 0], dtype=np.int8))
-    node_2.set_dof_boundary_conditions(np.array([0, 0, 1], dtype=np.int8))
-    node_3.set_dof_boundary_conditions(np.array([1, 1, 1], dtype=np.int8))
+    node_1.set_dof_boundary_conditions(np.array([1, 1, 0], dtype=np.int8))
+    node_2.set_dof_boundary_conditions(np.array([0, 0, 0], dtype=np.int8))
+    node_3.set_dof_boundary_conditions(np.array([1, 1, 0], dtype=np.int8))
 
     a.add_point_load(load_1)
 
-
-    #disp = a.solve()
     a.plot_structure()
+    disp = a.solve()
+    
 
 
 

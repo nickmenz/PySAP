@@ -7,6 +7,7 @@ class Load:
 class PointLoad(Load):
     
     def __init__(self, load_vector, node_applied_to):
+        ## TODO: THROW EXCEPTION IF 2D ARRAY NOT PASSED IN
         self.load_vector = load_vector
         self.node_applied_to = node_applied_to
 
