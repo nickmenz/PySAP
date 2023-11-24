@@ -1,4 +1,7 @@
 #from sympy import *
+from tkinter import Label
+from tkinter.tix import LabelEntry
+from tkinter.ttk import LabeledScale
 import matplotlib.pyplot as plt
 import numpy as np
 
@@ -92,9 +95,18 @@ import numpy as np
 #plt.show()
 
 
+#import matplotlib.pyplot as plt
+#plt.switch_backend('TkAgg')
+#import time
+
+#plt.ion()
+
+#plt.plot([1.5, 3.0])
+
 import numpy as np
 
-arr = np.array([[1, 2],
-                [3, 4]])
-arr[1,:] = 0
-print(arr)
+v = np.array([0., 0., 0.])
+
+print(np.count_nonzero(v))
+
+
