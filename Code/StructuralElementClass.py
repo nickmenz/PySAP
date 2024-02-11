@@ -42,6 +42,7 @@ class StructuralElement:
         return self.element_number
 
     def get_dof_deformation(self):
+        # [u1, v1, R1, u2, v2, R2]
         return self.local_dof_deformation
     
     def process_element_results(self):
@@ -100,6 +101,13 @@ class TrussElement(StructuralElement):
                      ])
         
         return k*self.area*self.elastic_modulus/element_length
+
+    def get_axial_force(self, discretization):
+        if self.local_dof_deformation == None:
+            print("Structure has not yet been solved!")
+            return 0
+        else:
+            return np.full(discretization, (self.local_dof_deformation[3] - self.local_dof_deformation[0])*self.elastic_modulus*self.area/self.element_length)
 
     def get_shape_functions(self, discretization):
         element_vector = np.subtract(self.global_nodes[1].get_coordinates(), self.global_nodes[0].get_coordinates())
@@ -177,6 +185,41 @@ class BeamElement(StructuralElement):
 
         return k*self.moment_of_inertia*self.elastic_modulus/L**3
     
+    def get_axial_force(self, discretization):
+        if not self.local_dof_deformation.any():
+            print("Structure has not yet been solved!")
+            return 0
+        else:
+            return np.full(discretization, (self.local_dof_deformation[3] - self.local_dof_deformation[0])*self.elastic_modulus*self.area/self.element_length)
+
+    def get_bending_moment(self, discretization):
+        if not self.local_dof_deformation.any():
+            print("Structure has not yet been solved!")
+            return 0
+        else:
+            #shape_functions = self.get_shape_functions(discretization)
+            #lateral_disp = self.local_dof_deformation[1] * shape_functions[1] + self.local_dof_deformation[4] * shape_functions[4]
+            #spacing = self.element_length/discretization
+            #return np.gradient(np.gradient(lateral_disp, spacing, edge_order=2), spacing, edge_order=2)
+            shape_functions = self.get_shape_functions_2nd_derivative(discretization)
+            return self.elastic_modulus*self.moment_of_inertia*(self.local_dof_deformation[1] * shape_functions[1] + self.local_dof_deformation[4] * shape_functions[4])
+
+    def get_shear(self, discretization):
+        if not self.local_dof_deformation.any():
+            print("Structure has not yet been solved!")
+            return 0
+        else:
+            shape_functions = self.get_shape_functions_3rd_derivative(discretization)
+            return self.elastic_modulus*self.moment_of_inertia*(self.local_dof_deformation[1] * shape_functions[1] + self.local_dof_deformation[4] * shape_functions[4])
+
+    def get_lateral_displacement(self, discretization):
+        if not self.local_dof_deformation.any():
+            print("Structure has not yet been solved!")
+            return 0
+        else:
+            shape_functions = self.get_shape_functions(discretization)
+            return self.local_dof_deformation[1] * shape_functions[1] + self.local_dof_deformation[4] * shape_functions[4] 
+    
     def get_shape_functions(self, discretization):
         element_vector = np.subtract(self.global_nodes[1].get_coordinates(), self.global_nodes[0].get_coordinates())
         L = np.linalg.norm(element_vector)
@@ -188,10 +231,33 @@ class BeamElement(StructuralElement):
         N5 = 3*x**2/L**2 - 2*x**3/L**3
         N6 = -x**2/L + x**3/L**2
         return np.array([N1, N2, N3, N4, N5, N6])
+    
+    def get_shape_functions_2nd_derivative(self, discretization):
+        element_vector = np.subtract(self.global_nodes[1].get_coordinates(), self.global_nodes[0].get_coordinates())
+        L = np.linalg.norm(element_vector)
+        x = np.linspace(0, L, discretization)
+        N1 = x*0
+        N2 = -6/L**2 + 12*x/L**3
+        N3 = -4*x/L + 6*x/L**2
+        N4 = x*0
+        N5 = 6/L**2 - 12*x/L**3
+        N6 = -2/L + 6*x/L**2
+        return np.array([N1, N2, N3, N4, N5, N6])
+
+    def get_shape_functions_3rd_derivative(self, discretization):
+        element_vector = np.subtract(self.global_nodes[1].get_coordinates(), self.global_nodes[0].get_coordinates())
+        L = np.linalg.norm(element_vector)
+        xd = np.full(discretization, 1) # dummy array so that each shape function will be an array of shape [disc]
+        N1 = xd*0
+        N2 = xd*(12/L**3)
+        N3 = xd*(-4/L + 6/L**2)
+        N4 = xd*0
+        N5 = xd*(-12/L**3)
+        N6 = xd*(6/L**2)
+        return np.array([N1, N2, N3, N4, N5, N6])
 
     def apply_distributed_load(self, distributed_load_magnitude):
         self.distributed_load_magnitude = distributed_load_magnitude
-
         
     def get_distributed_load_magnitude(self):
         return self.distributed_load_magnitude

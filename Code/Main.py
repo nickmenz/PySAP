@@ -3,6 +3,7 @@ import NodeClass as nd
 import StructuralElementClass as el
 import LoadClass as ld
 import numpy as np
+import matplotlib.pyplot as plt
 
 
 def main():
@@ -170,28 +171,25 @@ def main():
     print("Expected delta = " + str(delta_expected))
     
     a = struc.Structure("Structure 1")
-    node_0 = nd.Node([0., 0.], [1, 1, 0])
-    node_1 = nd.Node([150., 0.], [0, 0, 0])
-    node_2 = nd.Node([300., 0.], [1, 1, 0])
+    node_0 = nd.Node([0., 0.], [1, 1, 1])
+    node_1 = nd.Node([0., 240.], [0, 0, 0])
         
     a.add_node(node_0)
     a.add_node(node_1)
-    a.add_node(node_2)
             
     element_0 = el.BeamElement([node_0, node_1], beam_area, elastic_mod, moment_of_inertia)
-    element_1 = el.BeamElement([node_1, node_2], beam_area, elastic_mod, moment_of_inertia)
             
     a.add_element(element_0)
-    a.add_element(element_1)
 
     #element_0.apply_distributed_load(500)
     #element_1.apply_distributed_load(500)
-    node_1.apply_point_load(np.array([0, -50000, 0]))
+    node_1.apply_point_load(np.array([5000, 0, 0]))
 
     
     disp = a.solve()
     a.plot_deformed_structure()
-
+    disc=50
+    a.plot_shear_diagram(disc)
 
 
 main()

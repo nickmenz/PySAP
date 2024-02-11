@@ -104,9 +104,42 @@ import numpy as np
 #plt.plot([1.5, 3.0])
 
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Circle, Polygon, Wedge
 
-v = np.array([0., 0., 0.])
+#x = np.linspace(0, 9, 10)
+#y = x**3
 
-print(np.count_nonzero(v))
+#y1 = x*0
+
+#fig,ax = plt.subplots()
+#ax.plot(x, y)
+#ax.plot(x, y1)
+#collection = ax.fill_between(x, y, y1)
+#print(collection)
+
+#plt.show()
+
+fig,ax = plt.subplots()
+poly1 = Polygon([[0,0],
+             [10,0],
+             [10,15],
+             [0,15]
+             ])
+patches = []
+patches.append(poly1)
+p = PatchCollection(patches)
+ax.add_collection(p)
+ax.set_xlim(-50, 50)
+ax.set_ylim(-50, 50)
+plt.show()
+
+R = 1
+trans_matrix = np.array(())
+
+transform = 
+
+
 
 

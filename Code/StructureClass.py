@@ -32,7 +32,6 @@ class Structure:
         self.ax = None
 
 
-    
     def print_name(self):
         print(self.name)
         return
@@ -245,32 +244,11 @@ class Structure:
         
         return connectivity
 
-    def plot_deformed_structure(self, deformed_scale_factor=1000):
-        if self.global_D.size == 0:
-            try:
-                raise RuntimeError()
-            except:
-                print("Displacements of structure have not been solved for yet!")
-                return
-        self.plot_structure()
-
-        if not plt.get_fignums():
-            self.initialize_plot()
-            
-        for node in self.node_list:
-            self.plot_node(node, "deformed", deformed_scale_factor)     
-            
-        for element in self.element_list:
-            if isinstance(element, el.TrussElement) or isinstance(element, el.BeamElement):
-                self.plot_line_element(element, "deformed", deformed_scale_factor)
-            else:
-                print("Currently, only line elements are supported")
-        
-        plt.show()
-
+    def initialize_plot(self):
+        self.fig, self.ax = plt.subplots()
+        self.ax.axis("equal")
     
     def plot_structure(self):
-
         if not plt.get_fignums():
             self.initialize_plot()
 
@@ -295,12 +273,28 @@ class Structure:
         for node, point_load_vector in self.point_loads.items():
             self.plot_point_load(node, point_load_vector, self.default_view_scale_factor)
         
-        #plt.show()
+    def plot_deformed_structure(self, deformed_scale_factor=1000):
+        if self.global_D.size == 0:
+            try:
+                raise RuntimeError()
+            except:
+                print("Displacements of structure have not been solved for yet!")
+                return
+        self.plot_structure()
 
-    def initialize_plot(self):
-        self.fig, self.ax = plt.subplots()
-        self.ax.axis("equal")
-
+        if not plt.get_fignums():
+            self.initialize_plot()
+            
+        for node in self.node_list:
+            self.plot_node(node, "deformed", deformed_scale_factor)     
+            
+        for element in self.element_list:
+            if isinstance(element, el.TrussElement) or isinstance(element, el.BeamElement):
+                self.plot_line_element(element, "deformed", deformed_scale_factor)
+            else:
+                print("Currently, only line elements are supported")
+        
+        plt.show()        
        
     def plot_node(self, node, display_type, deformed_scale_factor=0):
         if display_type == "undeformed":
@@ -310,9 +304,7 @@ class Structure:
             coords = node.get_coordinates() + node.get_dof_deformation()[0:2] * deformed_scale_factor
             self.ax.scatter(coords[0], coords[1], color='gray', zorder=3)
         else:
-             raise RuntimeError("Undefined display type passed to plot_node function")
-
-        
+             raise RuntimeError("Undefined display type passed to plot_node function")    
     
     def plot_line_element(self, element, display_type, deformed_scale_factor=0):
         el_nodes = element.get_global_nodes()
@@ -359,8 +351,44 @@ class Structure:
             self.ax.plot(x, y, color='lightblue', linestyle='solid', linewidth=2.5, zorder=0)
         else:
             raise RuntimeError("Undefined display type passed to plot_line_element function")
-
         return
+
+    def plot_shear_diagram(self, discretization, view_scale_factor=.001):
+        if self.global_D.size == 0:
+            try:
+                raise RuntimeError()
+            except:
+                print("Structural displacements and forces have not been solved for yet!")
+                return
+        self.plot_structure()
+        
+        for element in self.element_list:
+            el_nodes = element.get_global_nodes()
+            shear = element.get_shear(discretization) * view_scale_factor
+            node1_x = el_nodes[0].get_coordinates()[0]
+            node1_y = el_nodes[0].get_coordinates()[1]
+            node2_x = el_nodes[1].get_coordinates()[0]
+            node2_y = el_nodes[1].get_coordinates()[1]
+            trans_matrix = util.get_2D_rotation_matrix(-element.get_angle_relative_to_global_x()).T
+            x = np.zeros([discretization])
+            y = np.zeros([discretization])
+            local_x = np.linspace(0, element.get_element_length(), discretization)
+            for i in range(discretization):
+                trans_coords = np.dot(trans_matrix, np.array([local_x[i], shear[i]]))
+                x[i] = trans_coords[0] + node1_x
+                y[i] = trans_coords[1] + node1_y
+            
+            start_point_x = np.array([node1_x, x[0]])
+            end_point_x = np.array([node2_x, x[-1]])
+            start_point_y = np.array([node1_y, y[0]])
+            end_point_y = np.array([node2_y, y[-1]])
+
+            self.ax.plot(x, y, color='orange', linestyle='solid', linewidth=1, zorder=0)
+            self.ax.plot(start_point_x, start_point_y, color='orange', linestyle='solid', linewidth=1, zorder=0)
+            self.ax.plot(end_point_x, end_point_y, color='orange', linestyle='solid', linewidth=1, zorder=0)
+            elem_y = linspace
+        
+        plt.show()
 
 
     def plot_point_load(self, node, point_load_vector, scale_factor):
