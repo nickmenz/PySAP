@@ -1,0 +1,35 @@
+from __future__ import annotations
+from typing import TYPE_CHECKING
+from typing import Union, List, Optional, Dict
+
+import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.patches as patches
+import matplotlib.transforms as transform
+import structural_element as el
+import node as nd
+import utility as util
+
+if TYPE_CHECKING:
+    from structure import Structure
+
+
+class Plotter:
+    """_summary_
+
+    Longer summary
+
+    Attributes:
+        _type_: _description_
+    """
+    # This implementation assumes a 2D structural system; i.e., the only DOF
+    # are UX, UY, and RZ
+    def __init__(
+        self,
+        structure: Structure
+    ):
+        self.structure = structure
+        self.view_scale_factor: int | float
+        self.deformation_scale_factor: Optional[int | float] = 500
+        self.fig, self.ax = plt.subplots()
+

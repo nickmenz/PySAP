@@ -1,8 +1,8 @@
 import unittest
-import LoadClass as ld
-import NodeClass as nd
-import StructuralElementClass as el
-import StructureClass as struc
+import load as ld
+import node as nd
+import structural_element as el
+import structure as struc
 import numpy as np
 
 class CustomAssertions:
