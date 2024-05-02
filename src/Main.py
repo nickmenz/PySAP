@@ -1,23 +1,28 @@
 import structure as struc
+import plotter
 import structural_element as el
 import load as ld
 import numpy as np
-import matplotlib.pyplot as plt
+
 
 
 def main():
 
     #### Units: lb, in
     a = struc.Structure("Structure 1")
-    a.add_element([[0, 0], [1*240/5, 0]], el_type="BEAM")
-    a.add_element([[1*240/5, 0], [2*240/5, 0]], el_type="BEAM")
-    a.add_element([[2*240/5, 0], [3*240/5, 0]], el_type="BEAM")
-    a.add_element([[3*240/5, 0], [4*240/5, 0]], el_type="BEAM")
-    a.add_element([[4*240/5, 0], [5*240/5, 0]], el_type="BEAM")
-    a.node_list[0].dof_boundary_conditions = np.array([1, 1, 1])
-    a.apply_nodal_load(node_id=5, load_vector=[0, -1, 0])
+    a.add_element([[0, 0], [0, 100]], el_type="BEAM")
+    a.add_element([[0, 100], [50, 100]], el_type="BEAM")
+    a.add_element([[50, 100], [50, 0]], el_type="BEAM")
+    a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[0, 0])
+    a.apply_boundary_condition(bcd_type="fixed", nearest_coordinates=[50, 0])
+    a.apply_nodal_load(node_id=1, load_vector=[100, -1000, 0])
+    #a.apply_nodal_load(node_id=1, load_vector=[0, -1000, 0])
+    plot = plotter.Plotter(a)
+    plot.plot_structure()
+    
     disp = a.solve()
-    print(disp)
-    a.plot_deformed_structure(deformed_scale_factor=5)
 
+    plot.plot_deformed_structure(deformed_scale_factor=5)
+    print(a.element_list[1].local_dof_deformation)
+    #plot.plot_shear_diagram(discretization=50)
 main()

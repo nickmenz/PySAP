@@ -36,9 +36,7 @@ class StructuralLineElement:
         self.element_length = np.linalg.norm(self.element_vector)
         # positive = CCW from global X-axis
         ## TODO: define utility unit vector function
-        self.angle_relative_to_global_x = np.arccos(
-            np.dot(self.element_vector, np.array([1, 0])) / self.element_length
-        )
+        self.angle_relative_to_global_x = np.arctan2(self.element_vector[1], self.element_vector[0])
 
     def process_element_results(self) -> None:
         """Computes local coordinate system element deformations.
@@ -52,14 +50,12 @@ class StructuralLineElement:
         """
         node_i_deformation = self.nodes[0].dof_deformation
         node_j_deformation = self.nodes[1].dof_deformation
-        elem_angle = np.arccos(
-            np.dot(self.element_vector, np.array([1, 0])) / self.element_length
-        )
+        
         node_i_dof_deformation = np.dot(
-            util.get_nodal_dof_rotation_matrix(elem_angle).T, node_i_deformation
+            util.get_nodal_dof_rotation_matrix(self.angle_relative_to_global_x).T, node_i_deformation
         )
         node_j_dof_deformation = np.dot(
-            util.get_nodal_dof_rotation_matrix(elem_angle).T, node_j_deformation
+            util.get_nodal_dof_rotation_matrix(self.angle_relative_to_global_x).T, node_j_deformation
         )
         self.local_dof_deformation = np.concatenate(
             (node_i_dof_deformation, node_j_dof_deformation)
@@ -148,12 +144,12 @@ class TrussElement(StructuralLineElement):
         """
         L = np.linalg.norm(self.element_vector)
         x = np.linspace(0, L, discretization)
-        N1 = 1 - x
-        N2 = 1 - x
-        N3 = 0
-        N4 = x
-        N5 = x
-        N6 = 0
+        N1 = 1 - x/L
+        N2 = 1 - x/L
+        N3 = 0*x
+        N4 = x/L
+        N5 = x/L
+        N6 = 0*x
         return np.array([N1, N2, N3, N4, N5, N6])
 
 
@@ -199,9 +195,9 @@ class BeamElement(StructuralLineElement):
         s2 = s**2
         c2 = c**2
 
-        k11 = t1 * c2 + 12 * s2
-        k12 = (t1 - 12) * c * s
-        k22 = t1 * s2 + 12 * c2
+        k11 = t1*c2 + 12*s2
+        k12 = (t1 - 12)*c*s
+        k22 = t1*s2 + 12*c2
         k13 = -6 * L * s
         k23 = 6 * L * c
         k33 = 4 * L**2
@@ -272,8 +268,8 @@ class BeamElement(StructuralLineElement):
             self.elastic_modulus
             * self.moment_of_inertia
             * (
-                self.local_dof_deformation[1] * shape_functions[1]
-                + self.local_dof_deformation[4] * shape_functions[4]
+                self.local_dof_deformation[1]*shape_functions[1]
+                + self.local_dof_deformation[4]*shape_functions[4]
             )
         )
 
@@ -294,8 +290,8 @@ class BeamElement(StructuralLineElement):
             self.elastic_modulus
             * self.moment_of_inertia
             * (
-                self.local_dof_deformation[1] * shape_functions[1]
-                + self.local_dof_deformation[4] * shape_functions[4]
+                self.local_dof_deformation[1]*shape_functions[1]
+                + self.local_dof_deformation[4]*shape_functions[4]
             )
         )
 
@@ -320,12 +316,12 @@ class BeamElement(StructuralLineElement):
         """
         L = np.linalg.norm(self.element_vector)
         x = np.linspace(0, L, discretization)
-        N1 = (1 - x) / L
-        N2 = 1 - 3 * x**2 / L**2 + 2 * x**3 / L**3
-        N3 = x - 2 * x**2 / L + x**3 / L**2
-        N4 = x / L
-        N5 = 3 * x**2 / L**2 - 2 * x**3 / L**3
-        N6 = -(x**2) / L + x**3 / L**2
+        N1 = 1 - x/L
+        N2 = 1 - 3*x**2/L**2 + 2*x**3/L**3
+        N3 = x - 2*x**2/L + x**3/L**2
+        N4 = x/L
+        N5 = 3*x**2/L**2 - 2*x**3/L**3
+        N6 = -(x**2)/L + x**3/L**2
         return np.array([N1, N2, N3, N4, N5, N6])
 
     def get_shape_functions_2nd_derivative(self, discretization: int) -> np.ndarray:
@@ -342,12 +338,12 @@ class BeamElement(StructuralLineElement):
         """
         L = np.linalg.norm(self.element_vector)
         x = np.linspace(0, L, discretization)
-        N1 = x * 0
-        N2 = -6 / L**2 + 12 * x / L**3
-        N3 = -4 * x / L + 6 * x / L**2
-        N4 = x * 0
-        N5 = 6 / L**2 - 12 * x / L**3
-        N6 = -2 / L + 6 * x / L**2
+        N1 = x*0
+        N2 = -6/L**2 + 12*x/L**3
+        N3 = -4*x/L + 6*x/L**2
+        N4 = x*0
+        N5 = 6/L**2 - 12*x/L**3
+        N6 = -2/L + 6*x/L**2
         return np.array([N1, N2, N3, N4, N5, N6])
 
     def get_shape_functions_3rd_derivative(self, discretization: int) -> np.ndarray:
@@ -367,11 +363,11 @@ class BeamElement(StructuralLineElement):
             discretization, 1
         )  # dummy array so that each shape function will be an array of shape [disc]
         N1 = xd * 0
-        N2 = xd * (12 / L**3)
-        N3 = xd * (-4 / L + 6 / L**2)
+        N2 = xd * (12/L**3)
+        N3 = xd * (-4/L + 6/L**2)
         N4 = xd * 0
-        N5 = xd * (-12 / L**3)
-        N6 = xd * (6 / L**2)
+        N5 = xd * (-12/L**3)
+        N6 = xd * (6/L**2)
         return np.array([N1, N2, N3, N4, N5, N6])
 
     def get_equivalent_nodal_load_vector(self, node: Node) -> np.ndarray:
@@ -394,6 +390,6 @@ class BeamElement(StructuralLineElement):
         q = self.distributed_load_magnitude
         L = self.element_length
         if node == self.nodes[0]:
-            return np.array([0, -q * L / 2, -q * L**2 / 12])
+            return np.array([0, -q*L/2, -q*L**2/12])
         else:
-            return np.array([0, -q * L / 2, q * L**2 / 12])
+            return np.array([0, -q*L/2, q*L**2/12])
