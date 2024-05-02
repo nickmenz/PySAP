@@ -14,7 +14,7 @@ def main():
     a.add_element([[0, 100], [50, 100]], el_type="BEAM")
     a.add_element([[50, 100], [50, 0]], el_type="BEAM")
     a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[0, 0])
-    a.apply_boundary_condition(bcd_type="fixed", nearest_coordinates=[50, 0])
+    a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[50, 0])
     a.apply_nodal_load(node_id=1, load_vector=[100, -1000, 0])
     #a.apply_nodal_load(node_id=1, load_vector=[0, -1000, 0])
     plot = plotter.Plotter(a)
