@@ -2,8 +2,8 @@ import numpy as np
 
 
 # By default, gives rotation matrix that can be multiplied by the DOF
-# vector to find the DOF of a node in 2D rotated CCW by theta in the 
-# same coordinate system. Note that the transpose of the matrix can be 
+# vector to find the DOF of a node in 2D rotated CCW by theta in the
+# same coordinate system. Note that the transpose of the matrix can be
 # multiplied by the DOF vector to yield the DOF in a second coordinate system 
 # that is oriented theta (CCW) from the original
 def get_nodal_dof_rotation_matrix(theta):
