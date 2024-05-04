@@ -324,7 +324,7 @@ class Plotter:
 
             # X-axis roller
             elif np.array_equal(bc, [0, 1, 0]):
-                self.plot_y_axis_roller_boundary_condition(coordinates)
+                self.plot_x_axis_roller_boundary_condition(coordinates)
 
             # rotational spring
             elif np.array_equal(bc, [0, 0, 1]):

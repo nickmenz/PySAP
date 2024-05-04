@@ -48,13 +48,14 @@ class Structure:
         self.boundary_conditions: List = []
         self.is_truss_only_structure: bool = True
         self.suppress_rotz: bool = True
-        #self.view_scale_factor: int | float
-        #self.deformation_scale_factor: Optional[int | float] = 500
-        #self.fig, self.ax = plt.subplots()
+
 
     def add_node(self, node: Node) -> None:
-        ## TODO: Reject if node already in list
-        self.node_list.append(node)
+        if node in self.node_list:
+            print("Node has already been added to structure and was not added")
+        else:
+            node.node_number = len(self.node_list)
+            self.node_list.append(node)
         return None
 
     def get_node_nearest_to_coordinate(
@@ -121,30 +122,35 @@ class Structure:
         else:
             raise ValueError(el_type + " is currently not supported")
 
+        new_element.element_number = len(self.element_list)
         self.element_list.append(new_element)
         return None
 
     def apply_nodal_load(
-        self, node_id: int, load_vector: List[int | float] | np.ndarray
+        self, node: Node, load_vector: List[int | float] | np.ndarray
     ) -> None:
         ## TODO: Add option to add nodal loads at a certain coordinate. For the latter case, the node nearest to the
         ## coordinate will be selected for load application
 
         ## Could also add an NSEL or ESEL type feature to enable adding loads to
         ## multiple nodes at once
-        try:
-            node = self.node_list[node_id]
-            if not isinstance(load_vector, np.ndarray):
-                load_vector = np.array(load_vector)
-            node.load_vector = load_vector
-            self.nodal_loads[node] = load_vector
-        except IndexError:
-            print(
-                "Node number "
-                + str(node_id)
-                + " does not exist. \
-                  No nodal load has been applied to this node"
-            )
+        # try:
+        #     node = self.node_list[node_id]
+        #     if not isinstance(load_vector, np.ndarray):
+        #         load_vector = np.array(load_vector)
+        #     node.load_vector = load_vector
+        #     self.nodal_loads[node] = load_vector
+        # except IndexError:
+        #     print(
+        #         "Node number "
+        #         + str(node_id)
+        #         + " does not exist. \
+        #           No nodal load has been applied"
+        #     )
+        if not isinstance(load_vector, np.ndarray):
+            load_vector = np.array(load_vector)
+        node.load_vector = load_vector
+        self.nodal_loads[node] = load_vector
         return None
 
     def apply_distributed_load(
@@ -197,7 +203,7 @@ class Structure:
             case "y_roller_rot":
                 node.dof_boundary_conditions = np.array([1, 0, 1])
             case _:
-                print(f"Specified boundary condition type on node {node.id} is not valid. Please select a valid boundary condition type")
+                print(f"Specified boundary condition type on node {node.node_number} is not valid. Please select a valid boundary condition type")
         return None
     
     def renumber_elements_and_nodes(self):
