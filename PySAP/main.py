@@ -5,24 +5,34 @@ import load as ld
 import numpy as np
 
 
-
 def main():
 
     #### Units: lb, in
     a = struc.Structure("Structure 1")
-    a.add_element([[0, 0], [0, 100]], el_type="BEAM")
-    a.add_element([[0, 100], [50, 100]], el_type="BEAM")
-    a.add_element([[50, 100], [50, 0]], el_type="BEAM")
+    # angle = -25
+    # angle = np.deg2rad(angle)
+    # x = 20*np.cos(angle)
+    # y = 20*np.sin(angle)
+    # a.add_element([[0, 0], [0.5*x, 0.5*y]], el_type="BEAM")
+    # a.add_element([[0.5*x, 0.5*y], [x, y]], el_type="BEAM")
+
+    # a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[0, 0])
+    # a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[x, y])
+    # a.apply_nodal_load(node=a.get_node_nearest_to_coordinate([0.5*x, 0.5*y]), load_vector=[-1000*y, -1000*x, 0])
+    
+    a.add_element([[0, 0], [50, 0]], el_type="BEAM")
+    a.add_element([[50, 0], [100, 0]], el_type="BEAM")
     a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[0, 0])
-    a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[50, 0])
-    a.apply_nodal_load(node_id=1, load_vector=[100, -1000, 0])
-    #a.apply_nodal_load(node_id=1, load_vector=[0, -1000, 0])
+    a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[100, 0])
+    #a.apply_nodal_load(node=a.get_node_nearest_to_coordinate([50, 0]), load_vector=[0, 100, 0])
+    a.apply_distributed_load(element_id=0, load_magnitude=-5)
+    a.apply_distributed_load(element_id=1, load_magnitude=5)
     plot = plotter.Plotter(a)
     plot.plot_structure()
     
     disp = a.solve()
-
     plot.plot_deformed_structure(deformed_scale_factor=5)
-    print(a.element_list[1].local_dof_deformation)
-    #plot.plot_shear_diagram(discretization=50)
+    plot.plot_moment_diagram()
+
+
 main()

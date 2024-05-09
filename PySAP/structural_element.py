@@ -254,7 +254,15 @@ class BeamElement(StructuralLineElement):
     def get_bending_moment_distribution(self, discretization: int) -> np.ndarray:
         """Computes the bending moment distribution along the length
         of the BeamElement.
-
+        
+        The moment due to nodal displacements is computed using the nodal displacement field multiplied by
+        the shape functions. The element moment field, that is, the moment field between nodes, is computed
+        by assuming the same moment field as a fixed-fixed beam. The total moment is the sum of the two.
+        
+        Sources: 
+        FEA Theory: Cook et al., Concepts and Applications of Finite Element Analysis, Pgs. 49-51
+        Element moment: NDS Beam Design Formulas with Shear and Moment Diagrams, Pg. 15  
+        
         Args:
             discretization (int): Number of evenly-spaced points along the member to
             compute bending moment.
@@ -264,19 +272,30 @@ class BeamElement(StructuralLineElement):
             points along the member.
         """
         shape_functions = self.get_shape_functions_2nd_derivative(discretization)
-        return (
-            self.elastic_modulus
-            * self.moment_of_inertia
-            * (
+        nodal_moment = self.elastic_modulus*self.moment_of_inertia*(
                 self.local_dof_deformation[1]*shape_functions[1]
+                + self.local_dof_deformation[2]*shape_functions[2]
                 + self.local_dof_deformation[4]*shape_functions[4]
-            )
+                + self.local_dof_deformation[5]*shape_functions[5]
         )
+        local_x = np.linspace(0, self.element_length, discretization)
+        
+        element_moment = (self.distributed_load_magnitude/12)*(6*self.element_length*local_x - self.element_length**2 - 6*local_x**2)
+        return (nodal_moment + element_moment)
+
 
     def get_shear_distribution(self, discretization: int) -> np.ndarray:
         """Computes the shear force distribution along the length
         of the BeamElement.
 
+        The shear due to nodal displacements is computed using the nodal displacement field multiplied by
+        the shape functions. The element shear field, that is, the shear field between nodes, is computed
+        by assuming the same shear field as a fixed-fixed beam. The total shear is the sum of the two.
+        
+        Sources: 
+        FEA Theory: Cook et al., Concepts and Applications of Finite Element Analysis, Pgs. 49-51
+        Element shear: NDS Beam Design Formulas with Shear and Moment Diagrams, Pg. 15
+        
         Args:
             discretization (int): Number of evenly-spaced points along the member to
             compute shear force.
@@ -286,16 +305,18 @@ class BeamElement(StructuralLineElement):
             along the member.
         """
         shape_functions = self.get_shape_functions_3rd_derivative(discretization)
-        return (
-            self.elastic_modulus
-            * self.moment_of_inertia
-            * (
+        nodal_shear = self.elastic_modulus*self.moment_of_inertia*(
                 self.local_dof_deformation[1]*shape_functions[1]
+                + self.local_dof_deformation[2]*shape_functions[2]
                 + self.local_dof_deformation[4]*shape_functions[4]
-            )
+                + self.local_dof_deformation[5]*shape_functions[5]
         )
+        local_x = np.linspace(0, self.element_length, discretization)
+        element_shear = self.distributed_load_magnitude*(self.element_length/2 - local_x)
+        return (nodal_shear + element_shear)
 
     ## WHY ONLY LATERAL?
+    ### TODO: Check if this is actually correct
     def get_lateral_displacement(self, discretization: int) -> np.ndarray:
         shape_functions = self.get_shape_functions(discretization)
         return (
@@ -340,7 +361,7 @@ class BeamElement(StructuralLineElement):
         x = np.linspace(0, L, discretization)
         N1 = x*0
         N2 = -6/L**2 + 12*x/L**3
-        N3 = -4*x/L + 6*x/L**2
+        N3 = -4/L + 6*x/L**2
         N4 = x*0
         N5 = 6/L**2 - 12*x/L**3
         N6 = -2/L + 6*x/L**2
@@ -362,12 +383,12 @@ class BeamElement(StructuralLineElement):
         xd = np.full(
             discretization, 1
         )  # dummy array so that each shape function will be an array of shape [disc]
-        N1 = xd * 0
-        N2 = xd * (12/L**3)
-        N3 = xd * (-4/L + 6/L**2)
-        N4 = xd * 0
-        N5 = xd * (-12/L**3)
-        N6 = xd * (6/L**2)
+        N1 = xd*0
+        N2 = xd*(12/L**3)
+        N3 = xd*(6/L**2)
+        N4 = xd*0
+        N5 = xd*(-12/L**3)
+        N6 = xd*(6/L**2)
         return np.array([N1, N2, N3, N4, N5, N6])
 
     def get_equivalent_nodal_load_vector(self, node: Node) -> np.ndarray:

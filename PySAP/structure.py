@@ -49,7 +49,26 @@ class Structure:
         self.is_truss_only_structure: bool = True
         self.suppress_rotz: bool = True
 
-
+    @property
+    def minmax_nodal_coordinates(self) -> Dict[str, float]:
+        """Minimum and maximum nodal coordinates in the X and Y directions"""        
+        all_node_coordinates = np.zeros((len(self.node_list), 2))
+        for i, node in enumerate(self.node_list):
+            all_node_coordinates[i][0] = node.coordinates[0]
+            all_node_coordinates[i][1] = node.coordinates[1]
+        
+        return {
+                "x_min" : np.min(all_node_coordinates[:,0]), 
+                "x_max" : np.max(all_node_coordinates[:,0]), 
+                "y_min" : np.min(all_node_coordinates[:,1]), 
+                "y_max" : np.max(all_node_coordinates[:,1])
+                }
+        
+    @property
+    def average_element_length(self) -> float:
+        """The average length of all elements in the structure"""        
+        return sum(element.element_length for element in self.element_list)/len(self.element_list)
+    
     def add_node(self, node: Node) -> None:
         if node in self.node_list:
             print("Node has already been added to structure and was not added")
@@ -190,18 +209,25 @@ class Structure:
         match bc_type:
             case "fixed":
                 node.dof_boundary_conditions = np.array([1, 1, 1])
+            
             case "pinned":
                 node.dof_boundary_conditions = np.array([1, 1, 0])
+           
             case "x_roller":
                 node.dof_boundary_conditions = np.array([0, 1, 0])
+            
             case "y_roller":
                 node.dof_boundary_conditions = np.array([1, 0, 0])
+            
             case "rot":
                 node.dof_boundary_conditions = np.array([0, 0, 1])
+            
             case "x_roller_rot":
                 node.dof_boundary_conditions = np.array([0, 1, 1])
+            
             case "y_roller_rot":
                 node.dof_boundary_conditions = np.array([1, 0, 1])
+            
             case _:
                 print(f"Specified boundary condition type on node {node.node_number} is not valid. Please select a valid boundary condition type")
         return None
@@ -278,7 +304,7 @@ class Structure:
                     element.get_equivalent_nodal_load_vector(node)
                 )
                 trans = util.get_nodal_dof_rotation_matrix(
-                    -element.angle_relative_to_global_x.T
+                    element.angle_relative_to_global_x
                 )
                 equivalent_global_nodal_load_vector = np.dot(
                     trans, equivalent_local_nodal_load_vector
@@ -375,4 +401,4 @@ class Structure:
                 )
 
         return connectivity
-    
+
