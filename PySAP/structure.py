@@ -1,11 +1,8 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
-from typing import Union, List, Optional, Dict
+from typing import List, Optional, Dict
 
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.patches as patches
-import matplotlib.transforms as transform
 import structural_element as el
 import node as nd
 import utility as util
