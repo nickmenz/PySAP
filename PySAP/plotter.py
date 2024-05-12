@@ -34,12 +34,18 @@ class Plotter:
 
     # This implementation assumes a 2D structural system; i.e., the only DOF
     # are UX, UY, and RZ
-    def __init__(self, structure: Structure, deformation_scale_factor: Optional[int | float] = None, discretization: Optional[int] = None):
+    def __init__(
+        self,
+        structure: Structure,
+        deformation_scale_factor: Optional[int | float] = None,
+        use_automatic_deformation_scaling: bool = False,
+        discretization: Optional[int] = None,
+    ):
         self.structure = structure
         self.fig: Figure
         self.ax: Axis
         if deformation_scale_factor is None:
-            self.deformation_scale_factor = 500.
+            self.deformation_scale_factor = 500.0
         else:
             self.deformation_scale_factor = deformation_scale_factor
         if discretization is None:
@@ -86,6 +92,10 @@ class Plotter:
         """Scaling factor that can be used to scale size of plotted items"""
         return self.plot_axis_length / 30
         # return self.structure.average_element_length / 25
+
+    # @property
+    # def automatic_deformation_scale_factor(self) -> float:
+    #     return np.max(self.structure.global_D)
 
     def initialize_plot(self) -> None:
         """Instantiates the matplotlib figure and axis and sets basic viewing settings.
@@ -296,9 +306,9 @@ class Plotter:
         """Plots an arrow showing nodal load.
 
         Arrows are plotted in the actual direction in which they act,
-        and therefore the absolute value of the load is shown in the 
+        and therefore the absolute value of the load is shown in the
         text annotation.
-        
+
         Args:
             node (Node): Node object that load is applied to.
             nodal_load_vector (np.ndarray): Vector of load.
@@ -311,11 +321,14 @@ class Plotter:
         nodal_moment = node.load_vector[2]
 
         if np.abs(x_force) > 0:
-            arrow_length = 4*self.view_scale_factor
+            arrow_length = 4 * self.view_scale_factor
             self.ax.annotate(
                 str(abs(round(x_force, 2))),
                 [node.coordinates[0], node.coordinates[1]],
-                xytext=[node.coordinates[0] - np.sign(x_force)*arrow_length, node.coordinates[1]],
+                xytext=[
+                    node.coordinates[0] - np.sign(x_force) * arrow_length,
+                    node.coordinates[1],
+                ],
                 xycoords="data",
                 textcoords="data",
                 horizontalalignment="center",
@@ -329,7 +342,10 @@ class Plotter:
             self.ax.annotate(
                 str(abs(round(y_force, 2))),
                 [node.coordinates[0], node.coordinates[1]],
-                xytext=[node.coordinates[0], node.coordinates[1] - np.sign(y_force)*arrow_length],
+                xytext=[
+                    node.coordinates[0],
+                    node.coordinates[1] - np.sign(y_force) * arrow_length,
+                ],
                 xycoords="data",
                 textcoords="data",
                 horizontalalignment="center",
@@ -375,9 +391,9 @@ class Plotter:
     def plot_distributed_load(self, element) -> None:
         # Plot in local coordinate system then transform to global
         if element.distributed_load_magnitude > 0:
-            offset_from_element = 2*self.view_scale_factor
+            offset_from_element = 2 * self.view_scale_factor
         else:
-            offset_from_element = -2*self.view_scale_factor
+            offset_from_element = -2 * self.view_scale_factor
         # Plot line above arrows
         top_line = np.array(
             [[0, offset_from_element], [element.element_length, offset_from_element]]
@@ -608,7 +624,7 @@ class Plotter:
 
         Returns:
             None
-        """        
+        """
         if self.structure.global_D.size == 0:
             try:
                 raise RuntimeError()
@@ -642,7 +658,7 @@ class Plotter:
 
         Returns:
             None
-        """        
+        """
         if self.structure.global_D.size == 0:
             try:
                 raise RuntimeError()
@@ -684,7 +700,7 @@ class Plotter:
 
         Returns:
             None
-        """        
+        """
         if self.structure.global_D.size == 0:
             try:
                 raise RuntimeError()
@@ -703,8 +719,11 @@ class Plotter:
 
         max_moment = np.max(
             [
-                max(np.abs(element.get_bending_moment_distribution(self.discretization)))
-                for element in self.structure.element_list if isinstance(element, el.BeamElement)
+                max(
+                    np.abs(element.get_bending_moment_distribution(self.discretization))
+                )
+                for element in self.structure.element_list
+                if isinstance(element, el.BeamElement)
             ]
         )
         self.plot_structure(show_plot=False, show_forces=False)
@@ -716,13 +735,13 @@ class Plotter:
 
         plt.show()
         return None
-    
+
     def plot_line_diagram(
         self,
         element: BeamElement | TrussElement,
         element_result: np.ndarray,
         max_element_result: float,
-        legend_label: str
+        legend_label: str,
     ):
         """Plots line diagrams on elements.
 
@@ -776,8 +795,16 @@ class Plotter:
             y[i] = rotated_coords[1] + node1_y
 
         # Plot line diagram
-        self.ax.plot(x, y, color="orange", linestyle="solid", linewidth=1, zorder=1, label=legend_label)
-        
+        self.ax.plot(
+            x,
+            y,
+            color="orange",
+            linestyle="solid",
+            linewidth=1,
+            zorder=1,
+            label=legend_label,
+        )
+
         # Add lines to connect ends of diagram to the element's nodes
         self.ax.plot(
             (node1_x, x[0]),
@@ -795,13 +822,17 @@ class Plotter:
             linewidth=1,
             zorder=1,
         )
-        
+
         # Shade area under plot
         element_global_x = np.linspace(
-            element.nodes[0].coordinates[0], element.nodes[1].coordinates[0], self.discretization
+            element.nodes[0].coordinates[0],
+            element.nodes[1].coordinates[0],
+            self.discretization,
         )
         element_global_y = np.linspace(
-            element.nodes[0].coordinates[1], element.nodes[1].coordinates[1], self.discretization
+            element.nodes[0].coordinates[1],
+            element.nodes[1].coordinates[1],
+            self.discretization,
         )
         for i in range(element_global_x.shape[0] - 1):
             self.ax.add_patch(

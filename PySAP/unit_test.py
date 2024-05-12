@@ -32,7 +32,7 @@ class TestBenchmarkTrussStructure1(unittest.TestCase, CustomAssertions):
         cls.a.apply_boundary_condition(bc_type="pinned", nearest_coordinates=[0, 0])
         cls.a.apply_boundary_condition(bc_type="pinned", nearest_coordinates=[144, 0])
         cls.a.apply_boundary_condition(bc_type="pinned", nearest_coordinates=[288, 0])
-        cls.a.apply_nodal_load(node=cls.a.get_node_nearest_to_coordinate([144, 192]), load_vector=[150, -300, 0])
+        cls.a.apply_nodal_load(at_coordinate=[144, 192], load_vector=[150, -300, 0])
 
         cls.disp = cls.a.solve()
 
@@ -89,8 +89,8 @@ class TestBenchmarkTrussStructure2(unittest.TestCase, CustomAssertions):
         cls.a.apply_boundary_condition(bc_type="pinned", nearest_coordinates=[0, 0])
         cls.a.apply_boundary_condition(bc_type="y_roller", nearest_coordinates=[0, 8000])
         cls.a.apply_boundary_condition(bc_type="pinned", nearest_coordinates=[10000, 0])
-        cls.a.apply_nodal_load(node=cls.a.get_node_nearest_to_coordinate([0., 8000.]), load_vector=[0, -400, 0])
-        cls.a.apply_nodal_load(node=cls.a.get_node_nearest_to_coordinate([6000., 8000.]), load_vector=[800, -400, 0])
+        cls.a.apply_nodal_load(at_coordinate=[0., 8000.], load_vector=[0, -400, 0])
+        cls.a.apply_nodal_load(at_coordinate=[6000., 8000.], load_vector=[800, -400, 0])
 
         cls.disp = cls.a.solve()
 
@@ -148,7 +148,7 @@ class TestFixedBeamStructureVerification(unittest.TestCase, CustomAssertions):
         cls.a.add_element([[150., 0.], [300., 0.]], el_type="BEAM", modulus_of_elasticity=E, area=A, moment_of_inertia=I)
         cls.a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[0., 0.])
         cls.a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[300., 0.])
-        cls.a.apply_nodal_load(node=cls.a.get_node_nearest_to_coordinate([150., 0.]), load_vector=[0, -50000, 0])
+        cls.a.apply_nodal_load(at_coordinate=[150., 0.], load_vector=[0, -50000, 0])
         
         cls.disp = cls.a.solve()
 
@@ -202,7 +202,7 @@ class TestBenchmarkBeamStructure1(unittest.TestCase, CustomAssertions):
         cls.a.add_element([[0, 240], [-240, 240]], el_type="BEAM", modulus_of_elasticity=E, area=A, moment_of_inertia=I)
         cls.a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[0, 0])
         cls.a.apply_boundary_condition(bc_type="x_roller", nearest_coordinates=[-240, 240])
-        cls.a.apply_nodal_load(node=cls.a.get_node_nearest_to_coordinate([0, 240]), load_vector=[5, 0, 0])
+        cls.a.apply_nodal_load(at_coordinate=[0, 240], load_vector=[5, 0, 0])
         
         cls.disp = cls.a.solve()
 
