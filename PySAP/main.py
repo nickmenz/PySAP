@@ -16,8 +16,8 @@ def main():
     a.add_element([[0, 0], [0.5*x, 0.5*y]], el_type="BEAM")
     a.add_element([[0.5*x, 0.5*y], [x, y]], el_type="BEAM")
 
-    a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[0, 0])
-    a.apply_boundary_condition(bc_type="fixed", nearest_coordinates=[x, y])
+    a.apply_boundary_condition(bc_type="pinned", nearest_coordinates=[0, 0])
+    a.apply_boundary_condition(bc_type="pinned", nearest_coordinates=[x, y])
     a.apply_nodal_load(at_coordinate=[0.5*x, 0.5*y], load_vector=[1000*y, -1000*x, 0])
     
     # a.add_element([[0, 0], [50, 0]], el_type="BEAM")
@@ -31,8 +31,9 @@ def main():
     plot.plot_structure()
     
     disp = a.solve()
-    plot.plot_deformed_structure(deformed_scale_factor=5)
-    plot.plot_moment_diagram()
+    #plot.plot_deformed_structure(deformed_scale_factor=5)
+    #plot.plot_moment_diagram()
+    a.print_diagnostics()
 
 
 main()

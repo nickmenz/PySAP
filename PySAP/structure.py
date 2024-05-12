@@ -31,7 +31,6 @@ class Structure:
     # are UX, UY, and RZ
     def __init__(
         self,
-        name: str = "Structure",
         default_modulus_of_elasticity: int | float = 29000,
         default_element_area: int | float = 3.54,
         default_moment_of_inertia: int | float = 53.8,
@@ -39,13 +38,14 @@ class Structure:
         self.default_modulus_of_elasticity = default_modulus_of_elasticity
         self.default_element_area = default_element_area
         self.default_moment_of_inertia = default_moment_of_inertia
-        self.name: str = "unnamed"
         self.node_list: List[Node] = []
         self.element_list: List[TrussElement | BeamElement] = []
         self.nodal_loads: Dict[Node, np.ndarray] = {}
         self.distributed_loads: Dict[BeamElement, int | float] = {}
-        self.NUM_DOF_PER_NODE: int = 3
-        self.global_D: np.ndarray = np.zeros((0,))
+        self.num_dof_per_node: int = 3
+        self.global_k: np.ndarray = np.zeros((0,))
+        self.global_d: np.ndarray = np.zeros((0,))
+        self.global_f: np.ndarray = np.zeros((0,))
         self.boundary_conditions: List = []
         self.is_truss_only_structure: bool = True
         self.suppress_rotz: bool = True
@@ -380,42 +380,36 @@ class Structure:
 
         # Define the ID array where 1 = constrained DOF, 0 = unconstrained DOF
         identification_array = self.create_identification_array()
-        print("ID array = ")
-        print(identification_array)
+
         # Convert ID array so that 0 = constrained DOF, other numbers indicate numbering of DOF
         identification_array_converted = (
             self.convert_id_array_to_dof_numbering_array(identification_array)
         )
-        print("ID array converted = ")
-        print(identification_array_converted)
-
-        global_K = self.assemble_global_k(identification_array_converted)
-        global_F = self.assemble_global_f(identification_array_converted)
+        
+        self.global_k = self.assemble_global_k(identification_array_converted)
+        self.global_f = self.assemble_global_f(identification_array_converted)
 
         # Solve for displacements
-        if np.linalg.matrix_rank(global_K) != global_K.shape[0]:
+        if np.linalg.matrix_rank(self.global_k) != self.global_k.shape[0]:
             raise RuntimeError("Global stiffness matrix is singular! Check for an unstable structure or input errors")
         
-        self.global_D = np.linalg.solve(global_K, global_F)
-
-        print("Global displacements = ")
-        print(self.global_D)
+        self.global_d = np.linalg.solve(self.global_k, self.global_f)
 
         # Update nodal displacements in node objects
         for node in self.node_list:
             node_dof_deformation = np.array([0.0, 0.0, 0.0])
             node_num = node.node_number
-            for i in range(self.NUM_DOF_PER_NODE):
+            for i in range(self.num_dof_per_node):
                 dof_num = identification_array_converted[i, node_num]
                 if dof_num != -1:
-                    node_dof_deformation[i] = self.global_D[dof_num]
+                    node_dof_deformation[i] = self.global_d[dof_num]
             node.dof_deformation = node_dof_deformation
 
         # Update element deformations
         for element in self.element_list:
             element.process_element_results()
 
-        return self.global_D
+        return self.global_d
 
     def assemble_global_k(self, identification_array_converted: np.ndarray):
         """Assembles the global stiffness matrix for the Structure object.
@@ -461,11 +455,7 @@ class Structure:
             element_connectivity_array = self.get_connectivity_array(
                 element, identification_array_converted
             )
-            print(f"Element connectivity array for element {element.element_number} = ")
-            print(element_connectivity_array)
             element_k = element.get_element_stiffness_matrix()
-            print(f"Element k for element {element.element_number} = ")
-            print(element_k)
             for row in range(element_k.shape[0]):
                 for col in range(element_k.shape[1]):
                     if (element_connectivity_array[row] != -1) and (
@@ -475,8 +465,7 @@ class Structure:
                             element_connectivity_array[row],
                             element_connectivity_array[col],
                         ] += element_k[row, col]
-        print("Assembled global K = ")
-        print(global_K)
+
         return global_K
 
     def assemble_global_f(self, identification_array_converted):
@@ -500,7 +489,7 @@ class Structure:
         num_unconstrained_dof = np.max(identification_array_converted) + 1
         global_F = np.zeros((num_unconstrained_dof))
         for node in self.nodal_loads:
-            for i in range(self.NUM_DOF_PER_NODE):
+            for i in range(self.num_dof_per_node):
                 global_dof_num = identification_array_converted[i, node.node_number]
                 # Prevent trying to apply force on constrained DOF
                 if global_dof_num == -1 and node.load_vector[i] != 0:
@@ -510,8 +499,7 @@ class Structure:
                 else:
                     global_F[global_dof_num] += node.load_vector[i]
 
-        print(self.distributed_loads)
-        for element in self.distributed_loads.keys():
+        for element in self.distributed_loads:
             for node in element.nodes:
                 equivalent_local_nodal_load_vector = (
                     element.get_equivalent_nodal_load_vector(node)
@@ -522,7 +510,7 @@ class Structure:
                 equivalent_global_nodal_load_vector = np.dot(
                     trans, equivalent_local_nodal_load_vector
                 )
-                for i in range(self.NUM_DOF_PER_NODE):
+                for i in range(self.num_dof_per_node):
                     global_dof_num = identification_array_converted[i, node.node_number]
                     # Prevent trying to apply force on constrained DOF
                     if global_dof_num != -1:
@@ -530,8 +518,6 @@ class Structure:
                             i
                         ]
 
-        print("Assembled global F = ")
-        print(global_F)
         return global_F
     
     def create_identification_array(self) -> np.ndarray:
@@ -558,7 +544,7 @@ class Structure:
         constrained_dof = np.zeros((3, len(self.node_list)), dtype=np.int64)
         for j, node in enumerate(self.node_list):
             node_dof = node.dof_boundary_conditions
-            for i in range(self.NUM_DOF_PER_NODE):
+            for i in range(self.num_dof_per_node):
                 constrained_dof[i, j] = node_dof[i]
 
         if self.suppress_rotz:
@@ -598,7 +584,7 @@ class Structure:
         """
         num_unconstrained_dof = 0
         for j in range(np.shape(identification_array)[1]):
-            for i in range(self.NUM_DOF_PER_NODE):
+            for i in range(self.num_dof_per_node):
                 if identification_array[i, j] == 0:
                     identification_array[i, j] = num_unconstrained_dof
                     num_unconstrained_dof += 1
@@ -640,12 +626,28 @@ class Structure:
             np.ndarray: Connectivity array for the element.
         """
         connectivity = np.zeros(
-            (self.NUM_DOF_PER_NODE * len(element.nodes)), dtype=np.int64
+            (self.num_dof_per_node * len(element.nodes)), dtype=np.int64
         )
         for j, node in enumerate(element.nodes):
-            for i in range(self.NUM_DOF_PER_NODE):
-                connectivity[j * self.NUM_DOF_PER_NODE + i] = (
+            for i in range(self.num_dof_per_node):
+                connectivity[j * self.num_dof_per_node + i] = (
                     identification_array_converted[i, node.node_number]
                 )
 
         return connectivity
+
+    def print_diagnostics(self):
+        
+        identification_array = self.create_identification_array()
+        print(f"ID array = \n{identification_array}")
+        
+        identification_array_converted = self.convert_id_array_to_dof_numbering_array(identification_array)
+        print(f"ID array converted = \n{identification_array_converted}")
+        
+        for element in self.element_list:
+            print(f"Element connectivity array for element {element.element_number} = \n{self.get_connectivity_array(element, identification_array_converted)}")
+            print(f"Element k for element {element.element_number} = \n{element.get_element_stiffness_matrix()}")
+
+        print(f"Assembled global F = \n{self.global_f}")
+        print(f"Assembled global K = \n{self.global_k}")
+        return None

@@ -173,7 +173,7 @@ class Plotter:
         Returns:
             None
         """
-        if self.structure.global_D.size == 0:
+        if self.structure.global_d.size == 0:
             try:
                 raise RuntimeError()
             except RuntimeError:
@@ -360,11 +360,11 @@ class Plotter:
                 node.coordinates[0] + 2 * self.view_scale_factor,
                 node.coordinates[1] + 2 * self.view_scale_factor,
                 str(load_magnitude),
-                color="red",
+                color="green",
                 ha="center",
                 va="center",
             )
-            rot_spring = patches.Arc(
+            rot_symbol = patches.Arc(
                 (node.coordinates[0], node.coordinates[1]),
                 2 * self.view_scale_factor,
                 2 * self.view_scale_factor,
@@ -372,7 +372,7 @@ class Plotter:
                 theta1=130,
                 theta2=50,
                 zorder=2,
-                color="red",
+                color="green",
             )
             arrow_x = (self.view_scale_factor) * np.cos(np.deg2rad(50))
             arrow_y = (self.view_scale_factor) * np.sin(np.deg2rad(50))
@@ -382,9 +382,9 @@ class Plotter:
                 radius=2 * self.view_scale_factor / 5,
                 orientation=np.deg2rad(50),
                 zorder=2,
-                color="red",
+                color="green",
             )
-            self.ax.add_patch(rot_spring)
+            self.ax.add_patch(rot_symbol)
             self.ax.add_patch(arrow_head)
         return None
 
@@ -457,7 +457,7 @@ class Plotter:
 
             # rotational spring
             elif np.array_equal(bc, [0, 0, 1]):
-                self.plot_rotational_spring_boundary_condition(coordinates)
+                self.plot_rotational_boundary_condition(coordinates)
 
             # Pin
             elif np.array_equal(bc, [1, 1, 0]):
@@ -466,12 +466,12 @@ class Plotter:
             # Y-axis roller + rotational spring
             elif np.array_equal(bc, [1, 0, 1]):
                 self.plot_y_axis_roller_boundary_condition(coordinates)
-                self.plot_rotational_spring_boundary_condition(coordinates)
+                self.plot_rotational_boundary_condition(coordinates)
 
             # X-axis roller + rotational spring
             elif np.array_equal(bc, [0, 1, 1]):
                 self.plot_x_axis_roller_boundary_condition(coordinates)
-                self.plot_rotational_spring_boundary_condition(coordinates)
+                self.plot_rotational_boundary_condition(coordinates)
 
             # fully fixed
             elif np.array_equal(bc, [1, 1, 1]):
@@ -563,8 +563,8 @@ class Plotter:
         self.ax.add_patch(pin)
         return None
 
-    def plot_rotational_spring_boundary_condition(self, coordinates: List | np.ndarray):
-        """Adds a rotational spring boundary condition patch to plot.
+    def plot_rotational_boundary_condition(self, coordinates: List | np.ndarray):
+        """Adds a rotational boundary condition patch to plot.
 
         Args:
             coordinates (List | np.ndarray): Coordinates of the node that the boundary conditions is applied to.
@@ -572,11 +572,34 @@ class Plotter:
         Returns:
             None.
         """
-        theta = np.radians(np.linspace(0, 360 * 3, 1000))
-        radius = self.view_scale_factor * theta * 2 / 50
-        x = radius * np.cos(theta) + coordinates[0]
-        y = radius * np.sin(theta) + coordinates[1]
-        plt.plot(x, y, color="red", linestyle="solid", linewidth=1.0, zorder=3)
+        # theta = np.radians(np.linspace(0, 360 * 3, 1000))
+        # radius = self.view_scale_factor * theta * 2 / 50
+        # x = radius * np.cos(theta) + coordinates[0]
+        # y = radius * np.sin(theta) + coordinates[1]
+        # plt.plot(x, y, color="red", linestyle="solid", linewidth=1.0, zorder=3)
+        rot_symbol = patches.Arc(
+            (coordinates[0], coordinates[1]),
+            2 * self.view_scale_factor,
+            2 * self.view_scale_factor,
+            angle=0.0,
+            theta1=130,
+            theta2=50,
+            zorder=2,
+            color="red",
+            lw=3
+        )
+        arrow_x = (self.view_scale_factor) * np.cos(np.deg2rad(50))
+        arrow_y = (self.view_scale_factor) * np.sin(np.deg2rad(50))
+        arrow_head = patches.RegularPolygon(
+            (coordinates[0] + arrow_x, coordinates[1] + arrow_y),
+            3,
+            radius=3 * self.view_scale_factor / 5,
+            orientation=np.deg2rad(50),
+            zorder=2,
+            color="red",
+        )
+        self.ax.add_patch(arrow_head)
+        self.ax.add_patch(rot_symbol)
         return None
 
     def plot_fixed_boundary_condition(
@@ -625,7 +648,7 @@ class Plotter:
         Returns:
             None
         """
-        if self.structure.global_D.size == 0:
+        if self.structure.global_d.size == 0:
             try:
                 raise RuntimeError()
             except RuntimeError:
@@ -659,7 +682,7 @@ class Plotter:
         Returns:
             None
         """
-        if self.structure.global_D.size == 0:
+        if self.structure.global_d.size == 0:
             try:
                 raise RuntimeError()
             except RuntimeError:
@@ -701,7 +724,7 @@ class Plotter:
         Returns:
             None
         """
-        if self.structure.global_D.size == 0:
+        if self.structure.global_d.size == 0:
             try:
                 raise RuntimeError()
             except RuntimeError:
@@ -845,7 +868,6 @@ class Plotter:
                     ),
                     color="orange",
                     alpha=0.2,
-                    edgecolor="orange",
                 )
             )
 
