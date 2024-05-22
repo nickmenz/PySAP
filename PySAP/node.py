@@ -3,7 +3,6 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 
-
 class Node:
     def __init__(self, coordinates: np.ndarray, dof_boundary_conditions: np.ndarray):
         self.coordinates = np.array(coordinates, dtype=np.float32)

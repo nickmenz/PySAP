@@ -1,6 +1,7 @@
 from __future__ import annotations
 from typing import TYPE_CHECKING
 from typing import Union, List
+import abc
 
 if TYPE_CHECKING:
     from node import Node
@@ -13,7 +14,7 @@ import numpy as np
 assumes a 2D structural system with the degrees of freedom (DOF) UX, UY, RZ"""
 
 
-class StructuralLineElement:
+class StructuralLineElement(abc.ABC):
     """Abstract class for a 1D line element (truss, beam, linear spring, etc.)
     All line elements have exactly two nodes. The element is defined as spanning
     between these two nodes.
@@ -21,7 +22,9 @@ class StructuralLineElement:
     Args:
         nodes (List[Node]): A list containing two nodes between which the element spans
     """
+    __metaclass__ = abc.ABCMeta
 
+    @abc.abstractmethod
     def __init__(self, nodes: List[Node]):
         try:
             assert len(nodes) == 2
@@ -30,6 +33,9 @@ class StructuralLineElement:
         self.nodes = nodes
         self.element_number = -1
         self.local_dof_deformation = np.array(
+            [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        )  # [u1, v1, R1, u2, v2, R2]
+        self.local_force_vector = np.array(    
             [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         )  # [u1, v1, R1, u2, v2, R2]
 
@@ -46,6 +52,15 @@ class StructuralLineElement:
         """positive = CCW from global X-axis"""
         return np.arctan2(self.element_vector[1], self.element_vector[0])
 
+    @abc.abstractmethod
+    def get_element_stiffness_matrix(self, transform_to_global_coordinates) -> np.ndarray:
+        k11 = 0
+        k12 = 0
+        k21 = 0
+        k22 = 0
+        return np.array([[k11, k12],
+                         [k21, k22]])
+
     def process_element_results(self) -> None:
         """Computes local coordinate system element deformations.
 
@@ -60,17 +75,13 @@ class StructuralLineElement:
         node_i_deformation = self.nodes[0].dof_deformation
         node_j_deformation = self.nodes[1].dof_deformation
 
-        node_i_dof_deformation = np.dot(
-            util.get_nodal_dof_rotation_matrix(self.angle_relative_to_global_x).T,
-            node_i_deformation,
-        )
-        node_j_dof_deformation = np.dot(
-            util.get_nodal_dof_rotation_matrix(self.angle_relative_to_global_x).T,
-            node_j_deformation,
-        )
+        node_i_dof_deformation = util.get_nodal_dof_rotation_matrix(self.angle_relative_to_global_x).T @ node_i_deformation,
+        node_j_dof_deformation = util.get_nodal_dof_rotation_matrix(self.angle_relative_to_global_x).T @ node_j_deformation,
+
         self.local_dof_deformation = np.concatenate(
-            (node_i_dof_deformation, node_j_dof_deformation)
+            (node_i_dof_deformation, node_j_dof_deformation), axis=None
         )
+        self.local_force_vector = self.get_element_stiffness_matrix(transform_to_global_coordinates=False) @ self.local_dof_deformation
         return None
 
 
@@ -100,9 +111,9 @@ class TrussElement(StructuralLineElement):
         self.area = area
         self.elastic_modulus = elastic_modulus
 
-    def get_element_stiffness_matrix(self) -> np.ndarray:
+    def get_element_stiffness_matrix(self, transform_to_global_coordinates: bool = True) -> np.ndarray:
         """Computes the stiffness matrix for the TrussElement
-        instance in the element local coordinate system.
+        instance in the global or local element coordinate system.
 
         Source:
         Cook et al., Concepts and Applications of Finite Element Analysis, 4th Ed.
@@ -119,14 +130,24 @@ class TrussElement(StructuralLineElement):
         [k15, k25, k35, k45, k55, k56]
         [k16, k26, k36, k46, k56, k66]
 
+        Alternatively, the stiffness matrix could be explicitly defined herein in terms 
+        of the local coordinate system stiffness matrix transformed by the transformation matrix: 
+        http://mae.uta.edu/~lawrence/me5310/course_materials/me5310_notes/3_Element_Transformations/3-2_Beam_Transformation/3-2_Beam_Transformation.htm
+        
+        Args:
+            convert_to_global_coordinates(bool): Whether to transform the stiffness matrix from the
+            element local coordinate system to the global coordinate system.
+        
         Returns:
             np.ndarray: A 6x6 matrix with stiffness coefficients for each
             DOF of the truss element.
         """
-        # Cosine of angle relative to X-axis
-        c = np.dot(self.element_vector, np.array([1, 0])) / self.element_length
-        # Sine of angle relative to X-axis
-        s = np.cross(np.array([1, 0]), self.element_vector) / self.element_length
+        if transform_to_global_coordinates:
+            c = np.cos(self.angle_relative_to_global_x)
+            s = np.sin(self.angle_relative_to_global_x)
+        else:
+            c = 1
+            s = 0
         k = np.array(
             [
                 [c**2, c * s, 0, -(c**2), -c * s, 0],
@@ -179,7 +200,7 @@ class TrussElement(StructuralLineElement):
             np.ndarray: Returns an array with the calculated values of the shape functions
             for all six DOF of a TrussElement at each discretized point along the member.
         """
-        L = np.linalg.norm(self.element_vector)
+        L = self.element_length
         x = np.linspace(0, L, discretization)
         N1 = 1 - x / L
         N2 = 1 - x / L
@@ -188,7 +209,6 @@ class TrussElement(StructuralLineElement):
         N5 = x / L
         N6 = 0 * x
         return np.array([N1, N2, N3, N4, N5, N6])
-
 
 class BeamElement(StructuralLineElement):
     """Class representing a structural beam element.
@@ -219,9 +239,9 @@ class BeamElement(StructuralLineElement):
         self.moment_of_inertia = moment_of_inertia
         self.distributed_load_magnitude = 0.0
 
-    def get_element_stiffness_matrix(self) -> np.ndarray:
+    def get_element_stiffness_matrix(self, transform_to_global_coordinates: bool = True) -> np.ndarray:
         """Computes the stiffness matrix of the BeamElement instance in the
-        local coordinate system
+        global or local element coordinate system.
 
         Sources:
         Cook et al., Concepts and Applications of Finite Element Analysis, 4th Ed
@@ -237,16 +257,26 @@ class BeamElement(StructuralLineElement):
         [k14, k24, k34, k44, k45, k46]
         [k15, k25, k35, k45, k55, k56]
         [k16, k26, k36, k46, k56, k66]
-
+        
+        Alternatively, the stiffness matrix could be explicitly defined herein in terms 
+        of the local coordinate system stiffness matrix transformed by the transformation matrix: 
+        http://mae.uta.edu/~lawrence/me5310/course_materials/me5310_notes/3_Element_Transformations/3-2_Beam_Transformation/3-2_Beam_Transformation.htm
+               
+        Args:
+            convert_to_global_coordinates(bool): Whether to transform the stiffness matrix from the
+            element local coordinate system to the global coordinate system.
+\
         Returns:
             np.ndarray: A 6x6 matrix with stiffness coefficients for each
             DOF of the truss element.
         """
-        L = np.linalg.norm(self.element_vector)  # use local variable for readability
-        # Cosine of angle relative to X-axis
-        c = np.cos(self.angle_relative_to_global_x)
-        # Sine of angle relative to X-axis
-        s = np.sin(self.angle_relative_to_global_x)
+        if transform_to_global_coordinates:
+            c = np.cos(self.angle_relative_to_global_x)
+            s = np.sin(self.angle_relative_to_global_x)
+        else:
+            c = 1
+            s = 0
+        L = self.element_length  # use local variable for readability
         t1 = self.area * L**2 / self.moment_of_inertia
         s2 = s**2
         c2 = c**2
@@ -395,7 +425,7 @@ class BeamElement(StructuralLineElement):
             np.ndarray: Returns an array with the calculated values of the shape functions
             for all six DOF of a BeamElement at each discretized point along the member.
         """
-        L = np.linalg.norm(self.element_vector)
+        L = self.element_length
         x = np.linspace(0, L, discretization)
         N1 = 1 - x / L
         N2 = 1 - 3 * x**2 / L**2 + 2 * x**3 / L**3
@@ -417,7 +447,7 @@ class BeamElement(StructuralLineElement):
             shape functions for all six DOF of a BeamElement at each discretized point along the
             member.
         """
-        L = np.linalg.norm(self.element_vector)
+        L = self.element_length
         x = np.linspace(0, L, discretization)
         N1 = x * 0
         N2 = -6 / L**2 + 12 * x / L**3
@@ -439,7 +469,7 @@ class BeamElement(StructuralLineElement):
             shape functions for all six DOF of a BeamElement at each discretized point along the
             member.
         """
-        L = np.linalg.norm(self.element_vector)
+        L = self.element_length
         xd = np.full(
             discretization, 1
         )  # dummy array so that each shape function will be an array of shape [disc]

@@ -43,6 +43,7 @@ class Structure:
         self.global_k: np.ndarray = np.zeros((0,))
         self.global_d: np.ndarray = np.zeros((0,))
         self.global_f: np.ndarray = np.zeros((0,))
+        self.reaction_forces: Dict[Node, np.ndarray] = {}
         self.boundary_conditions: List = []
         self.is_truss_only_structure: bool = True
         self.suppress_rotz: bool = True
@@ -315,24 +316,31 @@ class Structure:
         match bc_type:
             case "fixed":
                 node.dof_boundary_conditions = np.array([1, 1, 1])
+                self.reaction_forces[node] = np.array([0.0, 0.0, 0.0])
 
             case "pinned":
                 node.dof_boundary_conditions = np.array([1, 1, 0])
+                self.reaction_forces[node] = np.array([0.0, 0.0, 0.0])
 
             case "x_roller":
                 node.dof_boundary_conditions = np.array([0, 1, 0])
+                self.reaction_forces[node] = np.array([0.0, 0.0, 0.0])
 
             case "y_roller":
                 node.dof_boundary_conditions = np.array([1, 0, 0])
+                self.reaction_forces[node] = np.array([0.0, 0.0, 0.0])
 
             case "rot":
                 node.dof_boundary_conditions = np.array([0, 0, 1])
+                self.reaction_forces[node] = np.array([0.0, 0.0, 0.0])
 
             case "x_roller_rot":
                 node.dof_boundary_conditions = np.array([0, 1, 1])
+                self.reaction_forces[node] = np.array([0.0, 0.0, 0.0])
 
             case "y_roller_rot":
                 node.dof_boundary_conditions = np.array([1, 0, 1])
+                self.reaction_forces[node] = np.array([0.0, 0.0, 0.0])
 
             case _:
                 print(
@@ -364,9 +372,9 @@ class Structure:
         displacements are then updated using the global displacements.
 
         Returns:
-            np.ndarray: Global displacement vector where the ith row 
+            np.ndarray: Global displacement vector where the ith row
             is the displacement at the ith unconstrained DOF.
-        """        
+        """
         # Determine whether the structure is solely comprised of truss elements
         # Is structure unstable if rotz not suppressed?
         for element in self.element_list:
@@ -379,17 +387,19 @@ class Structure:
         identification_array = self.create_identification_array()
 
         # Convert ID array so that 0 = constrained DOF, other numbers indicate numbering of DOF
-        identification_array_converted = (
-            self.convert_id_array_to_dof_numbering_array(identification_array)
+        identification_array_converted = self.convert_id_array_to_dof_numbering_array(
+            identification_array
         )
-        
+
         self.global_k = self.assemble_global_k(identification_array_converted)
         self.global_f = self.assemble_global_f(identification_array_converted)
 
         # Solve for displacements
         if np.linalg.matrix_rank(self.global_k) != self.global_k.shape[0]:
-            raise RuntimeError("Global stiffness matrix is singular! Check for an unstable structure or input errors")
-        
+            raise RuntimeError(
+                "Global stiffness matrix is singular! Check for an unstable structure or input errors"
+            )
+
         self.global_d = np.linalg.solve(self.global_k, self.global_f)
 
         # Update nodal displacements in node objects
@@ -406,6 +416,8 @@ class Structure:
         for element in self.element_list:
             element.process_element_results()
 
+        self.compute_reaction_forces(identification_array_converted)
+
         return self.global_d
 
     def assemble_global_k(self, identification_array_converted: np.ndarray):
@@ -416,13 +428,13 @@ class Structure:
         so that the each coefficient in the local element matrices can be
         readily added to the proper location in the global stiffness matrix.
 
-        An intuitive understanding of the meaning of each coefficient of the 
-        global matrix is described in Kassimali: "A structure stiffness coefficient Kij 
-        represents the force at the location and in the direction of Pi required, 
-        along with other joint forces, to cause a unit value of the displacement dj, 
-        while all other joint displacements are zero. Thus, the jth column of the 
-        structure stiffness matrix S consists of the joint loads required, at the 
-        locations and in the directions of all the degrees of freedom of the structure, 
+        An intuitive understanding of the meaning of each coefficient of the
+        global matrix is described in Kassimali: "A structure stiffness coefficient Kij
+        represents the force at the location and in the direction of Pi required,
+        along with other joint forces, to cause a unit value of the displacement dj,
+        while all other joint displacements are zero. Thus, the jth column of the
+        structure stiffness matrix S consists of the joint loads required, at the
+        locations and in the directions of all the degrees of freedom of the structure,
         to cause a unit value of the displacement dj while all other displacements are zero."
 
         Sources:
@@ -438,13 +450,13 @@ class Structure:
         Sec. 3.7
 
         Args:
-            identification_array_converted (np.ndarray): An array from the 
-            convert_id_array_to_dof_numbering_array that defines the mapping 
+            identification_array_converted (np.ndarray): An array from the
+            convert_id_array_to_dof_numbering_array that defines the mapping
             from local element DOF to global DOF numberings.
 
         Returns:
             np.ndarray: Global stiffness matrix.
-        """        
+        """
         num_unconstrained_dof = np.max(identification_array_converted) + 1
         global_K = np.zeros((num_unconstrained_dof, num_unconstrained_dof))
         # Assemble the global stiffness matrix from the individual element stiffness matrices
@@ -470,19 +482,19 @@ class Structure:
 
         Forces due to both nodal loads and distributed loads are applied.
         Distributed loads are applied to the nodes as equivalent nodal loads.
-        
-        The mapping of local DOF numbering to global DOF numbering is 
+
+        The mapping of local DOF numbering to global DOF numbering is
         used to add each nodal force to its correct location in the
         global force vector.
-        
+
         Args:
-            identification_array_converted (np.ndarray): An array from the 
-            convert_id_array_to_dof_numbering_array that defines the mapping 
+            identification_array_converted (np.ndarray): An array from the
+            convert_id_array_to_dof_numbering_array that defines the mapping
             from local element DOF to global DOF numberings.
 
         Returns:
             np.ndarray: Global force vector.
-        """        
+        """
         num_unconstrained_dof = np.max(identification_array_converted) + 1
         global_F = np.zeros((num_unconstrained_dof))
         for node in self.nodal_loads:
@@ -516,7 +528,7 @@ class Structure:
                         ]
 
         return global_F
-    
+
     def create_identification_array(self) -> np.ndarray:
         """Create array (ID array) that identifies constrained and unconstrained degrees of freedom
         in the structure.
@@ -633,18 +645,75 @@ class Structure:
 
         return connectivity
 
+    def compute_reaction_forces(self, dof_numbering_array: np.ndarray) -> None:
+        """Computes the reaction forces on all constrained degrees of freedom.
+
+        Args:
+            dof_numbering_array (np.ndarray): Array that numbers all DOF in the structure.
+
+        Returns:
+            None
+        """        
+        for node in self.reaction_forces:  # pylint: disable=C0206
+            elem_attached_to_node = self.get_elements_attached_to_node(node)
+            for element in elem_attached_to_node:
+                if node == element.nodes[0]:
+                    element_global_force_vector = (
+                        util.get_nodal_dof_rotation_matrix(
+                            -element.angle_relative_to_global_x
+                        ).T
+                        @ element.local_force_vector[0:3]
+                    )
+                else:
+                    element_global_force_vector = (
+                        util.get_nodal_dof_rotation_matrix(
+                            -element.angle_relative_to_global_x
+                        ).T
+                        @ element.local_force_vector[3:6]
+                    )
+                for i in range(self.reaction_forces[node].shape[0]):
+                    if (
+                        dof_numbering_array[i, node.node_number] == -1
+                    ):  # Only add to vector if DOF is constrained
+                        self.reaction_forces[node][i] += element_global_force_vector[i]
+        return None
+
+    def get_elements_attached_to_node(
+        self, node: Node
+    ) -> List[TrussElement | BeamElement]:
+        """Returns a list with all of the elements attached to the argument node.
+
+        Args:
+            node (Node): Node to obtain elements attached to.
+
+        Returns:
+            List[TrussElement | BeamElement]: List of elements attached to the node.
+        """     
+        elements_attached = []
+        for element in self.element_list:
+            if node in element.nodes:
+                elements_attached.append(element)
+        return elements_attached
+
     def print_diagnostics(self):
-        
+
         identification_array = self.create_identification_array()
         print(f"ID array = \n{identification_array}")
-        
-        identification_array_converted = self.convert_id_array_to_dof_numbering_array(identification_array)
+
+        identification_array_converted = self.convert_id_array_to_dof_numbering_array(
+            identification_array
+        )
         print(f"ID array converted = \n{identification_array_converted}")
-        
+
         for element in self.element_list:
-            print(f"Element connectivity array for element {element.element_number} = \n{self.get_connectivity_array(element, identification_array_converted)}")
-            print(f"Element k for element {element.element_number} = \n{element.get_element_stiffness_matrix()}")
+            print(
+                f"Element connectivity array for element {element.element_number} = \n{self.get_connectivity_array(element, identification_array_converted)}"
+            )
+            print(
+                f"Element k for element {element.element_number} = \n{element.get_element_stiffness_matrix()}"
+            )
 
         print(f"Assembled global F = \n{self.global_f}")
         print(f"Assembled global K = \n{self.global_k}")
+        print(f"Solved global d = \n{self.global_d}")
         return None

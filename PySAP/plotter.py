@@ -108,7 +108,7 @@ class Plotter:
         self.ax.set_aspect("equal", adjustable="datalim")
         return None
 
-    def plot_structure(self, show_plot: bool = True, show_forces: bool = True) -> None:
+    def plot_structure(self, show_plot: bool = True, show_forces: bool = True, show_element_numbers: bool = False, show_node_numbers: bool = False) -> None:
         """Plots undeformed structural elements, nodes, boundary conditions, and loads.
         Also sets viewing window.
 
@@ -122,7 +122,7 @@ class Plotter:
             self.initialize_plot()
 
         for node in self.structure.node_list:
-            self.plot_node(node, "undeformed")
+            self.plot_node(node, "undeformed", show_node_numbers)
 
         # Set axis scales of plot
         x_center, y_center = self.plot_center
@@ -141,7 +141,7 @@ class Plotter:
             if isinstance(element, el.TrussElement) or isinstance(
                 element, el.BeamElement
             ):
-                self.plot_line_element(element, "undeformed")
+                self.plot_line_element(element, "undeformed", show_element_numbers)
             else:
                 print("Currently, only line elements are supported")
 
@@ -161,7 +161,7 @@ class Plotter:
             plt.show()
         return None
 
-    def plot_deformed_structure(self, deformed_scale_factor: int = 1000) -> None:
+    def plot_deformed_structure(self, show_reaction_forces: bool = True, deformed_scale_factor: int = 1000) -> None:
         """Plots structural elements and nodes in their deformed state.
 
         Args:
@@ -181,8 +181,8 @@ class Plotter:
                 return
         self.plot_structure(show_plot=False)
 
-        for node in self.structure.node_list:
-            self.plot_node(node, "deformed", deformed_scale_factor)
+        #for node in self.structure.node_list:
+            #self.plot_node(node, "deformed", deformed_scale_factor)
 
         for element in self.structure.element_list:
             if isinstance(element, el.TrussElement) or isinstance(
@@ -192,15 +192,19 @@ class Plotter:
             else:
                 print("Currently, only line elements are supported")
 
+        if show_reaction_forces:
+            self.plot_reaction_forces()
+        
         plt.show()
         return None
 
-    def plot_node(self, node, display_type, deformed_scale_factor: int = 1000) -> None:
+    def plot_node(self, node, display_type, show_node_number: bool = True, deformed_scale_factor: int = 1000) -> None:
         """Plots a node.
 
         Args:
             node (Node): Node object to be plotted.
-            display_type (str): Wether to plot at undeformed or deformed location.
+            display_type (str): Whether to plot at undeformed or deformed location.
+            show_node_number (bool): Whether to annotate the node number. Only shows if display_type = "undeformed"
             deformed_scale_factor (int, optional):  Factor to multiply actual displacements by for viewing. Defaults to 1000.
 
         Raises:
@@ -210,8 +214,10 @@ class Plotter:
             None
         """
         if display_type == "undeformed":
-            coords = node.coordinates
-            self.ax.scatter(coords[0], coords[1], color="black", zorder=2)
+            self.ax.scatter(node.coordinates[0], node.coordinates[1], color="black", zorder=2)
+            if show_node_number:
+                coords = (node.coordinates[0], node.coordinates[1] + self.view_scale_factor/4)
+                self.ax.annotate(node.node_number, node.coordinates, xytext= (0, 0.3), textcoords="offset fontsize", va="bottom", ha="center") 
         elif display_type == "deformed":
             coords = (
                 node.coordinates + node.dof_deformation[0:2] * deformed_scale_factor
@@ -225,6 +231,7 @@ class Plotter:
         self,
         element: BeamElement | TrussElement,
         display_type: str,
+        show_element_number: bool = False,
         deformed_scale_factor: int = 1000,
     ) -> None:
         """Plots line elements.
@@ -252,6 +259,8 @@ class Plotter:
                 [node1_coords[1], node2_coords[1]]
             )  # Using numpy array to avoid type warning
             self.ax.plot(x, y, color="blue", linestyle="solid", linewidth=2.5, zorder=1)
+            if show_element_number:
+                self.ax.annotate(element.element_number, (x[0] + 0.5*(x[1] - x[0]), y[0] + 0.5*(y[1] - y[0])), color="blue", ha="center", va="bottom")
 
         elif display_type == "deformed":
             # get shape functions for element and create a discretized local element x-axis
@@ -357,9 +366,9 @@ class Plotter:
         if np.abs(nodal_moment) > 0:
             load_magnitude = round(nodal_moment, 2)
             self.ax.text(
-                node.coordinates[0] + 2 * self.view_scale_factor,
+                node.coordinates[0],
                 node.coordinates[1] + 2 * self.view_scale_factor,
-                str(load_magnitude),
+                str(abs(load_magnitude)),
                 color="green",
                 ha="center",
                 va="center",
@@ -374,13 +383,14 @@ class Plotter:
                 zorder=2,
                 color="green",
             )
-            arrow_x = (self.view_scale_factor) * np.cos(np.deg2rad(50))
-            arrow_y = (self.view_scale_factor) * np.sin(np.deg2rad(50))
+            # The arrow head is oriented so that it points in the actual direction of the load
+            arrow_x = (self.view_scale_factor) * np.cos(np.deg2rad(90 - 40*np.sign(nodal_moment)))
+            arrow_y = (self.view_scale_factor) * np.sin(np.deg2rad(90 - 40*np.sign(nodal_moment)))
             arrow_head = patches.RegularPolygon(
                 (node.coordinates[0] + arrow_x, node.coordinates[1] + arrow_y),
                 3,
                 radius=2 * self.view_scale_factor / 5,
-                orientation=np.deg2rad(50),
+                orientation=np.deg2rad(50*np.sign(nodal_moment)),
                 zorder=2,
                 color="green",
             )
@@ -701,7 +711,7 @@ class Plotter:
         max_shear = np.max(
             [
                 max(np.abs(element.get_shear_distribution(self.discretization)))
-                for element in self.structure.element_list
+                for element in self.structure.element_list if isinstance(element, el.BeamElement)
             ]
         )
         self.plot_structure(show_plot=False, show_forces=False)
@@ -786,14 +796,14 @@ class Plotter:
             element_result.shape[0] == self.discretization
         ), "Element result array dimensions must match the specified discretization"
 
-        # Saving results in local coordinate system for plotting text annotations
+        # Element results at nodes
         node_1_result = element_result[0]
         node_2_result = element_result[-1]
 
         ### Plot line diagram ###
 
         # Scale result for viewing
-        element_result = (
+        element_result_scaled = (
             2 * self.view_scale_factor * (element_result / max_element_result)
         )
 
@@ -811,7 +821,7 @@ class Plotter:
         for i in range(self.discretization):
             # Rotate
             rotated_coords = np.dot(
-                trans_matrix, np.array([local_element_x[i], element_result[i]])
+                trans_matrix, np.array([local_element_x[i], element_result_scaled[i]])
             )
             # Translate
             x[i] = rotated_coords[0] + node1_x
@@ -905,6 +915,7 @@ class Plotter:
             fontsize="small",
             color="orange",
         )
+        self.ax.plot(x[0], y[0], "ro", markersize=2, color="orange")
 
         # Determine rotation angle of text at second node
         if node_2_result > 0:
@@ -937,3 +948,166 @@ class Plotter:
             fontsize="small",
             color="orange",
         )
+        self.ax.plot(x[-1], y[-1], "ro", markersize=2, color="orange")
+
+        # Check if any value between the nodes is greater or less than the values 
+        # at both nodes. If so, add an annotation to this intermediate location
+        if min(element_result) < node_1_result and min(element_result) < node_2_result:
+            min_result = min(element_result)
+            ind_min = np.argmin(element_result)
+
+            # Determine rotation angle of text at first node
+            element_angle_deg = np.rad2deg(element.angle_relative_to_global_x)
+            if min_result > 0:
+                if element_angle_deg >= 0 and element_angle_deg < 180:
+                    hor_align = "right"
+                    ver_align = "center"
+                    rot_angle = element_angle_deg - 90
+                else:  # Flip text so that it is right side=up
+                    hor_align = "left"
+                    ver_align = "center"
+                    rot_angle = element_angle_deg + 90
+            else:
+                if element_angle_deg >= 0 and element_angle_deg < 180:
+                    hor_align = "left"
+                    ver_align = "center"
+                    rot_angle = element_angle_deg - 90
+                else:  # Flip text so that it is right side=up
+                    hor_align = "right"
+                    ver_align = "center"
+                    rot_angle = element_angle_deg + 90
+
+            self.ax.annotate(
+                str(round(min(element_result), 2)),
+                (x[ind_min], y[ind_min]),
+                ha=hor_align,
+                va=ver_align,
+                rotation=rot_angle,
+                rotation_mode="anchor",
+                fontsize="small",
+                color="orange",
+            )
+            self.ax.plot(x[ind_min], y[ind_min], "ro", markersize=2, color="orange")
+        
+        elif max(element_result) > node_1_result and max(element_result) > node_2_result:
+            max_result = max(element_result)
+            ind_max = np.argmax(element_result)
+
+            # Determine rotation angle of text at first node
+            element_angle_deg = np.rad2deg(element.angle_relative_to_global_x)
+            if max_result > 0:
+                if element_angle_deg >= 0 and element_angle_deg < 180:
+                    hor_align = "right"
+                    ver_align = "center"
+                    rot_angle = element_angle_deg - 90
+                else:  # Flip text so that it is right side=up
+                    hor_align = "left"
+                    ver_align = "center"
+                    rot_angle = element_angle_deg + 90
+            else:
+                if element_angle_deg >= 0 and element_angle_deg < 180:
+                    hor_align = "left"
+                    ver_align = "center"
+                    rot_angle = element_angle_deg - 90
+                else:  # Flip text so that it is right side=up
+                    hor_align = "right"
+                    ver_align = "center"
+                    rot_angle = element_angle_deg + 90
+
+            self.ax.annotate(
+                str(round(max(element_result), 2)),
+                (x[ind_max], y[ind_max]),
+                ha=hor_align,
+                va=ver_align,
+                rotation=rot_angle,
+                rotation_mode="anchor",
+                fontsize="small",
+                color="orange",
+            )
+            self.ax.plot(x[ind_max], y[ind_max], "ro", markersize=2, color="orange")
+
+
+    def plot_reaction_forces(self) -> None:
+        """Plots directions and magnitudes of reaction forces.
+
+        Arrows are plotted in the actual direction in which they act,
+        and therefore the absolute value of the reaction is shown in the
+        text annotation.
+
+        Returns:
+            None
+        """
+        for node, reaction_vector in self.structure.reaction_forces.items():
+
+            x_reaction = reaction_vector[0]
+            y_reaction = reaction_vector[1]
+            moment_reaction = reaction_vector[2]
+
+            if np.abs(round(x_reaction, 2)) > 0:
+                arrow_length = 4 * self.view_scale_factor
+                self.ax.annotate(
+                    str(abs(round(x_reaction, 2))),
+                    [node.coordinates[0], node.coordinates[1]],
+                    xytext=[
+                        node.coordinates[0] - np.sign(x_reaction) * arrow_length,
+                        node.coordinates[1],
+                    ],
+                    xycoords="data",
+                    textcoords="data",
+                    horizontalalignment="center",
+                    arrowprops=dict(edgecolor="red", arrowstyle="->", lw=2),
+                    zorder=5,
+                    color="red",
+                    va="center",
+                )
+            if np.abs(round(y_reaction, 2)) > 0:
+                arrow_length = 4 * self.view_scale_factor
+                self.ax.annotate(
+                    str(abs(round(y_reaction, 2))),
+                    [node.coordinates[0], node.coordinates[1]],
+                    xytext=[
+                        node.coordinates[0],
+                        node.coordinates[1] - np.sign(y_reaction) * arrow_length,
+                    ],
+                    xycoords="data",
+                    textcoords="data",
+                    horizontalalignment="center",
+                    arrowprops=dict(edgecolor="red", arrowstyle="->", lw=2),
+                    zorder=5,
+                    color="red",
+                    ha="center",
+                )
+            if np.abs(round(moment_reaction, 2)) > 0:
+                self.ax.text(
+                    node.coordinates[0],
+                    node.coordinates[1] + 2 * self.view_scale_factor,
+                    str(abs(round(moment_reaction, 2))),
+                    color="red",
+                    ha="center",
+                    va="center",
+                )
+                rot_symbol = patches.Arc(
+                    (node.coordinates[0], node.coordinates[1]),
+                    2 * self.view_scale_factor,
+                    2 * self.view_scale_factor,
+                    angle=0.0,
+                    theta1=130,
+                    theta2=50,
+                    zorder=2,
+                    color="red",
+                )
+                # The arrow head is oriented so that it points in the actual direction of the load
+                arrow_x = (self.view_scale_factor) * np.cos(np.deg2rad(90 - 40*np.sign(moment_reaction)))
+                arrow_y = (self.view_scale_factor) * np.sin(np.deg2rad(90 - 40*np.sign(moment_reaction)))
+                arrow_head = patches.RegularPolygon(
+                    (node.coordinates[0] + arrow_x, node.coordinates[1] + arrow_y),
+                    3,
+                    radius=2 * self.view_scale_factor / 5,
+                    orientation=np.deg2rad(50*np.sign(moment_reaction)),
+                    zorder=2,
+                    color="red",
+                )
+                self.ax.add_patch(rot_symbol)
+                self.ax.add_patch(arrow_head)
+            
+        return None
